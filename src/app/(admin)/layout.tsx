@@ -10,6 +10,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui";
 import { getSession } from "@/lib/auth";
+import { getUnreadCount } from "@/app/(admin)/chat/actions";
 
 export default async function AdminLayout({
   children,
@@ -17,6 +18,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }>) {
   const user = await getSession();
+  const unread = user ? await getUnreadCount(user.id) : 0;
 
   return (
     <SidebarProvider defaultOpen>
@@ -28,7 +30,7 @@ export default async function AdminLayout({
           <span className="flex-1 text-sm font-medium text-muted-foreground">
             GMA Admin Panel
           </span>
-          <NotificationBell />
+          <NotificationBell unread={unread} />
           <ThemeToggle />
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>

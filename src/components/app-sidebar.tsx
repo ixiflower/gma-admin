@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Users,
-  FileText,
   Settings,
   BarChart3,
   MessageCircle,
@@ -53,7 +52,6 @@ const items: { title: string; href: string; icon: LucideIcon }[] = [
   { title: "Dashboard", href: "/", icon: Home },
   { title: "Chat", href: "/chat", icon: MessageCircle },
   { title: "Projects", href: "/projects", icon: FolderGit2 },
-  { title: "Posts", href: "/posts", icon: FileText },
   { title: "Users", href: "/users", icon: Users },
   { title: "Analytics", href: "/analytics", icon: BarChart3 },
   { title: "Notes", href: "/notes", icon: NotebookPen },

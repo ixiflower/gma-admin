@@ -2,10 +2,23 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { Search, SendHorizonal, X, MessageCircle, PanelRightClose, PanelRightOpen, EllipsisVertical, Trash2 } from "lucide-react";
+import {
+  Search,
+  SendHorizonal,
+  X,
+  MessageCircle,
+  PanelRightClose,
+  PanelRightOpen,
+  EllipsisVertical,
+  Trash2,
+  ArrowLeft,
+  ImageIcon,
+  Film,
+  FileText,
+} from "lucide-react";
 
-import { sendMessage, toggleReaction, type SendState, type MessageWithAuthor } from "@/app/(admin)/chat/actions";
-import { Avatar, AvatarFallback, Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input, Label, Separator } from "@/components/ui";
+import { sendMessage, toggleReaction, markAllRead, type SendState, type MessageWithAuthor } from "@/app/(admin)/chat/actions";
+import { Avatar, AvatarFallback, AvatarImage, Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input, Label, Separator, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup } from "@/components/ui/message";
 import type { User } from "@/db/schema";
@@ -13,12 +26,15 @@ import type { User } from "@/db/schema";
 export function ChatRoom({
   messages: initialMessages,
   users,
+  currentUserId,
 }: {
   messages: MessageWithAuthor[];
   users: User[];
+  currentUserId: number;
 }) {
   const [query, setQuery] = React.useState("");
-  const [showSearch, setShowSearch] = React.useState(false);
+  const [userQuery, setUserQuery] = React.useState("");
+  const [rightPanel, setRightPanel] = React.useState<"users" | "search">("users");
   const [selectedChat, setSelectedChat] = React.useState(users[0]?.name ?? "");
   const [showUsers, setShowUsers] = React.useState(true);
   const [sidebarW, setSidebarW] = React.useState(240);
@@ -52,6 +68,12 @@ export function ChatRoom({
         )
       : initialMessages;
 
+  const selectedUser = users.find((u) => u.name === selectedChat);
+
+  React.useEffect(() => {
+    markAllRead(currentUserId);
+  }, [currentUserId]);
+
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -66,8 +88,23 @@ export function ChatRoom({
           <span className="text-sm font-medium">Chats</span>
         </div>
         <Separator />
-        <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-          {users.map((u) => (
+        <div className="px-2 pt-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={userQuery}
+              onChange={(e) => setUserQuery(e.target.value)}
+              placeholder="Search users..."
+              className="h-7 pl-7 text-xs"
+            />
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-1">
+          {users
+            .filter((u) =>
+              u.name.toLowerCase().includes(userQuery.toLowerCase()),
+            )
+            .map((u) => (
             <button
               key={u.id}
               onClick={() => setSelectedChat(u.name)}
@@ -109,26 +146,6 @@ export function ChatRoom({
           </Avatar>
           <span className="text-sm font-medium">{selectedChat}</span>
           <div className="ml-auto flex items-center gap-1">
-            {showSearch && (
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search messages..."
-                  className="h-7 w-40 pl-7 pr-7 text-xs"
-                  autoFocus
-                />
-                {query && (
-                  <button
-                    onClick={() => setQuery("")}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="size-3" />
-                  </button>
-                )}
-              </div>
-            )}
             <button
               onClick={() => setShowUsers((v) => !v)}
               className="hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:inline-flex"
@@ -145,9 +162,14 @@ export function ChatRoom({
                 <EllipsisVertical className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={() => setShowSearch((v) => !v)}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setRightPanel("search");
+                    setShowUsers(true);
+                  }}
+                >
                   <Search className="size-4" />
-                  {showSearch ? "Hide search" : "Search"}
+                  Search
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
@@ -213,44 +235,150 @@ export function ChatRoom({
       </div>
 
       {showUsers && (
-      <div className="hidden w-44 shrink-0 flex-col border-l xl:flex">
-        <div className="flex items-center gap-2 px-3 py-3">
-          <span className="text-sm font-medium">Users</span>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {users.length}
-          </span>
-        </div>
-        <Separator />
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-0.5 p-2">
-            {users.map((u) => (
-              <div
-                key={u.id}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5"
+      <div className="hidden w-60 shrink-0 flex-col border-l xl:flex">
+        {rightPanel === "search" ? (
+          <>
+            <div className="flex items-center gap-2 px-3 py-3">
+              <button
+                onClick={() => setRightPanel("users")}
+                className="rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                <div className="relative">
-                  <Avatar className="size-6">
-                    <AvatarFallback className="text-[0.55rem]">
-                      {u.name
+                <ArrowLeft className="size-4" />
+              </button>
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search in chat..."
+                className="h-7 flex-1 text-xs"
+                autoFocus
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+            <Separator />
+            <div className="flex-1 overflow-y-auto">
+              {query.length > 0 ? (
+                <div className="flex flex-col gap-0.5 p-2">
+                  {initialMessages
+                    .filter((m) =>
+                      m.body.toLowerCase().includes(query.toLowerCase()),
+                    )
+                    .map((m) => (
+                      <button
+                        key={m.id}
+                        className="rounded-md p-2 text-left text-xs transition-colors hover:bg-muted"
+                      >
+                        <p className="line-clamp-2 text-muted-foreground">
+                          {m.body}
+                        </p>
+                        <p className="mt-0.5 text-[0.6rem] text-muted-foreground">
+                          {m.author.name} ·{" "}
+                          {new Date(m.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </button>
+                    ))}
+                  {initialMessages.filter((m) =>
+                    m.body.toLowerCase().includes(query.toLowerCase()),
+                  ).length === 0 && (
+                    <p className="p-2 text-center text-xs text-muted-foreground">
+                      No results found.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="p-4 text-center text-xs text-muted-foreground">
+                  Type to search messages...
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 px-3 py-3">
+              <span className="text-sm font-medium">Profile</span>
+            </div>
+            <Separator />
+            <div className="flex-1 overflow-y-auto">
+              {selectedUser ? (
+                <div className="flex flex-col items-center gap-4 p-4">
+                  <Avatar className="size-20">
+                    <AvatarImage
+                      src={selectedUser.image ?? undefined}
+                      alt={selectedUser.name}
+                    />
+                    <AvatarFallback className="text-xl">
+                      {selectedUser.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")
+                        .toUpperCase()
                         .slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-background bg-green-500" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium">{selectedUser.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedUser.email}
+                    </p>
+                    <Badge variant="outline" className="mt-1 capitalize">
+                      {selectedUser.role}
+                    </Badge>
+                  </div>
+                  {selectedUser.bio && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      {selectedUser.bio}
+                    </p>
+                  )}
+                  <Separator />
+                  <Tabs defaultValue="media" className="w-full">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="media" className="flex-1 gap-1 text-xs">
+                        <ImageIcon className="size-3" />
+                        Media
+                      </TabsTrigger>
+                      <TabsTrigger value="files" className="flex-1 gap-1 text-xs">
+                        <FileText className="size-3" />
+                        Files
+                      </TabsTrigger>
+                      <TabsTrigger value="links" className="flex-1 gap-1 text-xs">
+                        <Film className="size-3" />
+                        Links
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="media" className="mt-2">
+                      <p className="text-center text-xs text-muted-foreground">
+                        No shared images yet.
+                      </p>
+                    </TabsContent>
+                    <TabsContent value="files" className="mt-2">
+                      <p className="text-center text-xs text-muted-foreground">
+                        No shared files yet.
+                      </p>
+                    </TabsContent>
+                    <TabsContent value="links" className="mt-2">
+                      <p className="text-center text-xs text-muted-foreground">
+                        No shared links yet.
+                      </p>
+                    </TabsContent>
+                  </Tabs>
                 </div>
-                <span className="truncate text-xs">{u.name}</span>
-                <Badge
-                  variant="outline"
-                  className="ml-auto px-1 py-0 text-[0.55rem] capitalize"
-                >
-                  {u.role}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
+              ) : (
+                <p className="p-4 text-center text-xs text-muted-foreground">
+                  Select a user to view their profile.
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
       )}
     </div>

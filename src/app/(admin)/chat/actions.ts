@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -73,6 +73,23 @@ export async function toggleReaction(messageId: number, emoji: string) {
   revalidatePath("/chat");
 }
 
+export async function getUnreadCount(currentUserId: number) {
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(and(eq(messages.isRead, 0), ne(messages.userId, currentUserId)));
+
+  return rows.length;
+}
+
+export async function markAllRead(currentUserId: number) {
+  await db
+    .update(messages)
+    .set({ isRead: 1 })
+    .where(and(eq(messages.isRead, 0), ne(messages.userId, currentUserId)));
+  revalidatePath("/chat");
+}
+
 export type MessageWithAuthor = Message & {
   author: Pick<(typeof users.$inferSelect), "id" | "name">;
 };
@@ -84,6 +101,7 @@ export async function getMessages(): Promise<MessageWithAuthor[]> {
       userId: messages.userId,
       body: messages.body,
       reactions: messages.reactions,
+      isRead: messages.isRead,
       createdAt: messages.createdAt,
       author: {
         id: users.id,
