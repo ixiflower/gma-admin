@@ -43,30 +43,36 @@ export async function login(
     return { error: "Email and password are required." };
   }
 
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  try {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-  if (!user) {
-    return { error: "Invalid email or password." };
+    if (!user) {
+      return { error: "Invalid email or password." };
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return { error: "Invalid email or password." };
+    }
+
+    const jar = await cookies();
+    jar.set(SESSION_COOKIE, String(user.id), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    redirect("/");
+  } catch (err) {
+    console.error("Login error:", err);
+    return { error: "Something went wrong. Please try again." };
   }
-
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) {
-    return { error: "Invalid email or password." };
-  }
-
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE, String(user.id), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  redirect("/");
 }
 
 export async function signup(
@@ -85,32 +91,38 @@ export async function signup(
     return { error: "Password must be at least 6 characters." };
   }
 
-  const existing = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  try {
+    const existing = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-  if (existing.length > 0) {
-    return { error: "Email already registered." };
+    if (existing.length > 0) {
+      return { error: "Email already registered." };
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const [user] = await db
+      .insert(users)
+      .values({ name, email, password: hash, role: "member" })
+      .returning();
+
+    const jar = await cookies();
+    jar.set(SESSION_COOKIE, String(user.id), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    redirect("/");
+  } catch (err) {
+    console.error("Signup error:", err);
+    return { error: "Something went wrong. Please try again." };
   }
-
-  const hash = await bcrypt.hash(password, 10);
-
-  const [user] = await db
-    .insert(users)
-    .values({ name, email, password: hash, role: "member" })
-    .returning();
-
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE, String(user.id), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  redirect("/");
 }
 
 export async function logout() {
