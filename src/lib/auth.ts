@@ -21,6 +21,8 @@ export async function getSession() {
       name: users.name,
       email: users.email,
       role: users.role,
+      image: users.image,
+      bio: users.bio,
     })
     .from(users)
     .where(eq(users.id, parseInt(userId)))

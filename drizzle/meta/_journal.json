@@ -15,6 +15,13 @@
       "when": 1785590752490,
       "tag": "0001_stormy_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785592830229,
+      "tag": "0002_perfect_texas_twister",
+      "breakpoints": true
     }
   ]
 }

@@ -9,15 +9,18 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui";
+import { getSession } from "@/lib/auth";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getSession();
+
   return (
     <SidebarProvider defaultOpen>
-      <AppSidebar />
+      <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger />

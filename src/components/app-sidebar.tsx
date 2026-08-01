@@ -21,7 +21,7 @@ import {
   FolderGit2,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,11 @@ const items: { title: string; href: string; icon: LucideIcon }[] = [
   { title: "Todos", href: "/todos", icon: CheckSquare },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({
+  user,
+}: {
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null } | null;
+}) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
@@ -110,7 +114,7 @@ export function AppSidebar() {
             <Settings className="size-4" />
             <span>Settings</span>
           </SidebarMenuButton>
-          <ProfileAvatar onOpenSettings={() => setSettingsOpen(true)} />
+          <ProfileAvatar user={user} onOpenSettings={() => setSettingsOpen(true)} />
         </div>
       </SidebarFooter>
 
@@ -132,11 +136,20 @@ export function AppSidebar() {
 }
 
 function ProfileAvatar({
+  user,
   onOpenSettings,
 }: {
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null } | null;
   onOpenSettings: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
+
+  const initials = user?.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() ?? "?";
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -148,16 +161,17 @@ function ProfileAvatar({
             setOpen(true);
           }}
         >
-          <AvatarFallback className="text-xs">GM</AvatarFallback>
+          <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? ""} />
+          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium leading-none">GMA Admin</p>
+              <p className="text-sm font-medium leading-none">{user?.name ?? "User"}</p>
               <p className="text-xs leading-none text-muted-foreground">
-                admin@gma.app
+                {user?.email ?? ""}
               </p>
             </div>
           </DropdownMenuLabel>
