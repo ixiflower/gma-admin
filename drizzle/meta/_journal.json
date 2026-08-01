@@ -29,6 +29,20 @@
       "when": 1785595966866,
       "tag": "0003_thick_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785597146608,
+      "tag": "0004_cloudy_junta",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785597224288,
+      "tag": "0005_peaceful_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

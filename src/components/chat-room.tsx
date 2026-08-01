@@ -36,9 +36,28 @@ export function ChatRoom({
   const [userQuery, setUserQuery] = React.useState("");
   const [rightPanel, setRightPanel] = React.useState<"users" | "search">("users");
   const [selectedChat, setSelectedChat] = React.useState(users[0]?.name ?? "");
-  const [showUsers, setShowUsers] = React.useState(true);
+  const [showUsers, setShowUsers] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    const cookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("chat_sidebar="));
+    if (cookie) {
+      setShowUsers(cookie.split("=")[1] === "1");
+    }
+  }, []);
   const [sidebarW, setSidebarW] = React.useState(240);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleUsersPanel = React.useCallback(() => {
+    setShowUsers((prev) => {
+      const next = !prev;
+      if (typeof document !== "undefined") {
+        document.cookie = `chat_sidebar=${next ? "1" : "0"}; path=/`;
+      }
+      return next;
+    });
+  }, []);
 
   const handleResizeStart = React.useCallback(
     (e: React.MouseEvent) => {
@@ -147,7 +166,7 @@ export function ChatRoom({
           <span className="text-sm font-medium">{selectedChat}</span>
           <div className="ml-auto flex items-center gap-1">
             <button
-              onClick={() => setShowUsers((v) => !v)}
+              onClick={() => toggleUsersPanel()}
               className="hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:inline-flex"
               aria-label={showUsers ? "Hide users panel" : "Show users panel"}
             >

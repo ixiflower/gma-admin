@@ -8,10 +8,11 @@ import { z } from "zod";
 import { db } from "@/db";
 import { messages, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { uploadImage, uploadVideo } from "@/lib/cloudinary";
 import type { Message } from "@/db/schema";
 
 const sendSchema = z.object({
-  body: z.string().min(1, "Message cannot be empty").max(2000),
+  body: z.string().max(2000).optional(),
 });
 
 export type SendState = {
@@ -38,9 +39,23 @@ export async function sendMessage(
   }
 
   try {
+    const file = formData.get("file") as File | null;
+    let attachment: string | null = null;
+
+    if (file && file.size > 0) {
+      const isVideo = file.type.startsWith("video/");
+      const url = isVideo ? await uploadVideo(file) : await uploadImage(file);
+      attachment = JSON.stringify({
+        type: isVideo ? "video" : "image",
+        url,
+        name: file.name,
+      });
+    }
+
     await db.insert(messages).values({
       userId: user.id,
-      body: parsed.data.body,
+      body: parsed.data.body ?? "",
+      attachment,
     });
   } catch {
     return { errors: { form: ["Failed to send the message."] } };
@@ -101,6 +116,7 @@ export async function getMessages(): Promise<MessageWithAuthor[]> {
       userId: messages.userId,
       body: messages.body,
       reactions: messages.reactions,
+      attachment: messages.attachment,
       isRead: messages.isRead,
       createdAt: messages.createdAt,
       author: {

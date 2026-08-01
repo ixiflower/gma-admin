@@ -59,3 +59,21 @@ export async function updateProfile(
   revalidatePath("/settings");
   return { success: "Profile updated." };
 }
+
+export async function saveGithubToken(
+  _state: { errors?: { form?: string[] }; success?: string },
+  formData: FormData,
+): Promise<{ errors?: { form?: string[] }; success?: string }> {
+  const user = await getSession();
+  if (!user) return { errors: { form: ["Not authenticated."] } };
+
+  const token = formData.get("githubToken") as string;
+
+  await db
+    .update(users)
+    .set({ githubToken: token || null })
+    .where(eq(users.id, user.id));
+
+  revalidatePath("/settings");
+  return { success: "GitHub token saved." };
+}

@@ -16,6 +16,7 @@ export const users = pgTable(
     password: varchar("password", { length: 255 }).notNull().default(""),
     image: text("image"),
     bio: text("bio"),
+    githubToken: text("github_token"),
     role: text("role").notNull().default("member"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -47,6 +48,7 @@ export const messages = pgTable("messages", {
     .references(() => users.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
   reactions: text("reactions").default("{}"),
+  attachment: text("attachment"),
   isRead: integer("is_read").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

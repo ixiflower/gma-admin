@@ -10,9 +10,15 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui";
-import { Bell, CreditCard, Palette, Shield, User } from "lucide-react";
+import { Bell, CreditCard, Link2, Palette, Shield, User } from "lucide-react";
+import { saveGithubToken } from "@/lib/profile-actions";
+import { useActionState } from "react";
 
-export function SettingsPanel() {
+export function SettingsPanel({
+  user,
+}: {
+  user: { githubToken: string | null } | null;
+}) {
   return (
     <Tabs defaultValue="general" orientation="vertical" className="flex gap-4">
       <TabsList className="h-fit flex-col items-start gap-1">
@@ -35,6 +41,10 @@ export function SettingsPanel() {
         <TabsTrigger value="billing" className="w-full justify-start gap-2">
           <CreditCard className="size-3.5" />
           Billing
+        </TabsTrigger>
+        <TabsTrigger value="connect" className="w-full justify-start gap-2">
+          <Link2 className="size-3.5" />
+          Connect
         </TabsTrigger>
       </TabsList>
 
@@ -168,7 +178,44 @@ export function SettingsPanel() {
             <Input id="billing-email" type="email" defaultValue="admin@gma.app" />
           </div>
         </TabsContent>
+
+        <TabsContent value="connect" className="flex flex-col gap-4">
+          <GithubTokenForm currentToken={user?.githubToken ?? null} />
+        </TabsContent>
       </div>
     </Tabs>
+  );
+}
+
+function GithubTokenForm({ currentToken }: { currentToken: string | null }) {
+  const [state, formAction, pending] = useActionState(saveGithubToken, {});
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      {state?.success && (
+        <div className="rounded-lg bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+          {state.success}
+        </div>
+      )}
+      {state?.errors?.form?.map((error: string) => (
+        <p key={error} className="text-sm text-destructive">{error}</p>
+      ))}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="github-token">GitHub Personal Access Token</Label>
+        <Input
+          id="github-token"
+          name="githubToken"
+          type="password"
+          defaultValue={currentToken ?? ""}
+          placeholder="ghp_xxxxxxxxxxxx"
+        />
+        <p className="text-xs text-muted-foreground">
+          Create a token at GitHub Settings → Developer settings → Personal access tokens. Needs <code>repo</code> scope.
+        </p>
+      </div>
+      <Button type="submit" disabled={pending} className="w-fit">
+        {pending ? "Saving..." : "Save token"}
+      </Button>
+    </form>
   );
 }

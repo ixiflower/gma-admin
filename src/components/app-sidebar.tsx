@@ -7,7 +7,6 @@ import {
   Home,
   Users,
   Settings,
-  BarChart3,
   MessageCircle,
   type LucideIcon,
   ChevronRight,
@@ -53,7 +52,6 @@ const items: { title: string; href: string; icon: LucideIcon }[] = [
   { title: "Chat", href: "/chat", icon: MessageCircle },
   { title: "Projects", href: "/projects", icon: FolderGit2 },
   { title: "Users", href: "/users", icon: Users },
-  { title: "Analytics", href: "/analytics", icon: BarChart3 },
   { title: "Notes", href: "/notes", icon: NotebookPen },
   { title: "Todos", href: "/todos", icon: CheckSquare },
 ];
@@ -61,7 +59,7 @@ const items: { title: string; href: string; icon: LucideIcon }[] = [
 export function AppSidebar({
   user,
 }: {
-  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null } | null;
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; githubToken: string | null } | null;
 }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -126,7 +124,7 @@ export function AppSidebar({
               Manage your account settings and preferences.
             </DialogDescription>
           </DialogHeader>
-          <SettingsPanel />
+          <SettingsPanel user={user} />
         </DialogContent>
       </Dialog>
     </Sidebar>
@@ -137,7 +135,7 @@ function ProfileAvatar({
   user,
   onOpenSettings,
 }: {
-  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null } | null;
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; githubToken: string | null } | null;
   onOpenSettings: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
