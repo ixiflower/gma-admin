@@ -10,7 +10,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui";
 import { getSession } from "@/lib/auth";
-import { getUnreadCount } from "@/app/(admin)/chat/actions";
+import { getUnreadCount } from "@/app/(dash)/chat/actions";
 
 export default async function AdminLayout({
   children,

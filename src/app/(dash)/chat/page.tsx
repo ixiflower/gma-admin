@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { getMessages } from "@/app/(admin)/chat/actions";
+import { getMessages } from "@/app/(dash)/chat/actions";
 import { getSession } from "@/lib/auth";
 import { ChatRoom } from "@/components/chat-room";
 

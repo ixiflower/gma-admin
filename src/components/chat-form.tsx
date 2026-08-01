@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { SendHorizonal } from "lucide-react";
 
-import { sendMessage, type SendState } from "@/app/(admin)/chat/actions";
+import { sendMessage, type SendState } from "@/app/(dash)/chat/actions";
 import { Button, Input, Label } from "@/components/ui";
 
 export function ChatForm() {

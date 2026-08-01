@@ -17,7 +17,7 @@ import {
   FileText,
 } from "lucide-react";
 
-import { sendMessage, toggleReaction, markAllRead, type SendState, type MessageWithAuthor } from "@/app/(admin)/chat/actions";
+import { sendMessage, toggleReaction, markAllRead, type SendState, type MessageWithAuthor } from "@/app/(dash)/chat/actions";
 import { Avatar, AvatarFallback, AvatarImage, Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input, Label, Separator, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup } from "@/components/ui/message";
