@@ -212,6 +212,7 @@ export function ChatRoom({
         <ChatInput />
       </div>
 
+      {showUsers && (
       <div className="hidden w-44 shrink-0 flex-col border-l xl:flex">
         <div className="flex items-center gap-2 px-3 py-3">
           <span className="text-sm font-medium">Users</span>
@@ -251,6 +252,7 @@ export function ChatRoom({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
