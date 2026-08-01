@@ -43,6 +43,13 @@
       "when": 1785597224288,
       "tag": "0005_peaceful_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785599392693,
+      "tag": "0006_polite_chimera",
+      "breakpoints": true
     }
   ]
 }

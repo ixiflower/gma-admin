@@ -55,3 +55,17 @@ export const messages = pgTable("messages", {
 
 export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
+
+export const todos = pgTable("todos", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  completed: integer("completed").notNull().default(0),
+  priority: text("priority").notNull().default("medium"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Todo = typeof todos.$inferSelect;
+export type NewTodo = typeof todos.$inferInsert;
