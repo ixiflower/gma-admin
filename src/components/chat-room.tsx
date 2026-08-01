@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { Search, SendHorizonal, X, MessageCircle } from "lucide-react";
+import { Search, SendHorizonal, X, MessageCircle, PanelRightClose, PanelRightOpen, EllipsisVertical, Trash2 } from "lucide-react";
 
 import { sendMessage, toggleReaction, type SendState, type MessageWithAuthor } from "@/app/(admin)/chat/actions";
-import { Avatar, AvatarFallback, Badge, Button, Input, Label, Separator } from "@/components/ui";
+import { Avatar, AvatarFallback, Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input, Label, Separator } from "@/components/ui";
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup } from "@/components/ui/message";
 import type { User } from "@/db/schema";
@@ -18,8 +18,30 @@ export function ChatRoom({
   users: User[];
 }) {
   const [query, setQuery] = React.useState("");
+  const [showSearch, setShowSearch] = React.useState(false);
   const [selectedChat, setSelectedChat] = React.useState(users[0]?.name ?? "");
+  const [showUsers, setShowUsers] = React.useState(true);
+  const [sidebarW, setSidebarW] = React.useState(240);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const handleResizeStart = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = sidebarW;
+      const onMove = (ev: MouseEvent) => {
+        const w = Math.max(160, Math.min(400, startW + ev.clientX - startX));
+        setSidebarW(w);
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [sidebarW],
+  );
 
   const filtered =
     query.length > 0
@@ -38,13 +60,13 @@ export function ChatRoom({
 
   return (
     <div className="flex flex-1 gap-0 overflow-hidden">
-      <div className="hidden w-48 shrink-0 flex-col border-r md:flex">
+      <div className="hidden shrink-0 flex-col border-r md:flex relative" style={{ width: sidebarW }}>
         <div className="flex items-center gap-2 px-3 py-3">
           <MessageCircle className="size-4 text-muted-foreground" />
           <span className="text-sm font-medium">Chats</span>
         </div>
         <Separator />
-        <div className="flex flex-1 flex-col gap-0.5 p-2">
+        <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
           {users.map((u) => (
             <button
               key={u.id}
@@ -55,8 +77,8 @@ export function ChatRoom({
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              <Avatar className="size-5">
-                <AvatarFallback className="text-[0.55rem]">
+              <Avatar className="size-8 shrink-0">
+                <AvatarFallback className="text-xs">
                   {u.name
                     .split(" ")
                     .map((n) => n[0])
@@ -68,6 +90,10 @@ export function ChatRoom({
             </button>
           ))}
         </div>
+        <div
+          className="absolute -right-1 top-0 z-10 h-full w-1.5 cursor-col-resize hover:bg-primary/30"
+          onMouseDown={handleResizeStart}
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -82,24 +108,59 @@ export function ChatRoom({
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium">{selectedChat}</span>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search messages..."
-                className="h-7 pl-7 pr-7 text-xs"
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-3" />
-                </button>
+          <div className="ml-auto flex items-center gap-1">
+            {showSearch && (
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search messages..."
+                  className="h-7 w-40 pl-7 pr-7 text-xs"
+                  autoFocus
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setShowUsers((v) => !v)}
+              className="hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:inline-flex"
+              aria-label={showUsers ? "Hide users panel" : "Show users panel"}
+            >
+              {showUsers ? (
+                <PanelRightClose className="size-4" />
+              ) : (
+                <PanelRightOpen className="size-4" />
               )}
-            </div>
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <EllipsisVertical className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setShowSearch((v) => !v)}>
+                  <Search className="size-4" />
+                  {showSearch ? "Hide search" : "Search"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => {
+                    // clear chat - reset messages locally
+                    window.location.reload();
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                  Delete chat
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -115,8 +176,8 @@ export function ChatRoom({
               {filtered.map((msg) => (
                 <Message key={msg.id} align="start">
                   <MessageAvatar>
-                    <Avatar className="size-7">
-                      <AvatarFallback className="text-[0.6rem]">
+                    <Avatar className="size-9">
+                      <AvatarFallback className="text-[0.65rem]">
                         {msg.author.name
                           .split(" ")
                           .map((n) => n[0])
