@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage, Badge, Button, DropdownMenu, Dropd
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup } from "@/components/ui/message";
 import { getSharedTeams } from "@/app/(dash)/team/actions";
+import { getSharedTeams } from "@/app/(dash)/team/actions";
 import type { User } from "@/db/schema";
 
 export function ChatRoom({
@@ -51,13 +52,7 @@ export function ChatRoom({
     const cookie = document.cookie.split("; ").find((r) => r.startsWith("chat_sidebar="));
     if (cookie) setShowUsers(cookie.split("=")[1] === "1");
   }, []);
-    const cookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("chat_sidebar="));
-    if (cookie) {
-      setShowUsers(cookie.split("=")[1] === "1");
-    }
-  }, []);
+
   const [sidebarW, setSidebarW] = React.useState(240);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [sharedTeams, setSharedTeams] = React.useState<{ id: number; name: string }[]>([]);
@@ -536,7 +531,7 @@ function Reactions({ msg }: { msg: MessageWithAuthor }) {
           </button>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 
