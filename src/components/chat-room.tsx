@@ -80,16 +80,24 @@ export function ChatRoom({
     [sidebarW],
   );
 
+  const selectedUser = users.find((u) => u.name === selectedChat);
+
+  const conversationMessages = selectedUser
+    ? initialMessages.filter(
+        (m) =>
+          (m.userId === currentUserId && m.recipientId === selectedUser.id) ||
+          (m.userId === selectedUser.id && m.recipientId === currentUserId),
+      )
+    : [];
+
   const filtered =
     query.length > 0
-      ? initialMessages.filter(
+      ? conversationMessages.filter(
           (m) =>
             m.body.toLowerCase().includes(query.toLowerCase()) ||
             m.author.name.toLowerCase().includes(query.toLowerCase()),
         )
-      : initialMessages;
-
-  const selectedUser = users.find((u) => u.name === selectedChat);
+      : conversationMessages;
 
   React.useEffect(() => {
     if (selectedUser && currentUserId) {
@@ -266,7 +274,7 @@ export function ChatRoom({
           <div className="h-0" />
         </div>
 
-        <ChatInput />
+            <ChatInput recipientId={selectedUser?.id ?? undefined} />
       </div>
 
       {showUsers && (
@@ -471,7 +479,7 @@ function Reactions({ msg }: { msg: MessageWithAuthor }) {
   );
 }
 
-function ChatInput() {
+function ChatInput({ recipientId }: { recipientId?: number }) {
   const [state, formAction, pending] = useActionState<SendState, FormData>(
     sendMessage,
     {},
@@ -479,6 +487,7 @@ function ChatInput() {
 
   return (
     <form action={formAction} className="shrink-0 border-t px-4 py-3">
+      {recipientId != null && <input type="hidden" name="recipientId" value={recipientId} />}
       {state.errors?.form?.map((error: string) => (
         <p key={error} className="mb-1 text-xs text-destructive">
           {error}

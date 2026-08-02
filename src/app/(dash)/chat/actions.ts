@@ -13,6 +13,7 @@ import type { Message } from "@/db/schema";
 
 const sendSchema = z.object({
   body: z.string().max(2000).optional(),
+  recipientId: z.coerce.number().int().optional(),
 });
 
 export type SendState = {
@@ -54,6 +55,7 @@ export async function sendMessage(
 
     await db.insert(messages).values({
       userId: user.id,
+      recipientId: parsed.data.recipientId ?? null,
       body: parsed.data.body ?? "",
       attachment,
     });
@@ -117,6 +119,7 @@ export async function getMessages(): Promise<MessageWithAuthor[]> {
       body: messages.body,
       reactions: messages.reactions,
       attachment: messages.attachment,
+      recipientId: messages.recipientId,
       isRead: messages.isRead,
       createdAt: messages.createdAt,
       author: {

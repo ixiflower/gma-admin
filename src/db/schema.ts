@@ -49,6 +49,8 @@ export const messages = pgTable("messages", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  recipientId: integer("recipient_id")
+    .references(() => users.id, { onDelete: "set null" }),
   body: text("body").notNull(),
   reactions: text("reactions").default("{}"),
   attachment: text("attachment"),
