@@ -26,6 +26,7 @@ export async function sendMessage(
 ): Promise<SendState> {
   const parsed = sendSchema.safeParse({
     body: formData.get("body"),
+    recipientId: formData.get("recipientId"),
   });
 
   if (!parsed.success) {
