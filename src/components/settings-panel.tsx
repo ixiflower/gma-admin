@@ -9,10 +9,17 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
 } from "@/components/ui";
 import { Bell, CreditCard, Link2, Palette, Shield, User } from "lucide-react";
-import { saveGithubToken } from "@/lib/profile-actions";
-import { useActionState } from "react";
+import { saveGithubToken, saveAIConfig } from "@/lib/profile-actions";
+import { useActionState, useEffect } from "react";
+import { toast } from "sonner";
 
 export function SettingsPanel({
   user,
@@ -181,6 +188,8 @@ export function SettingsPanel({
 
         <TabsContent value="connect" className="flex flex-col gap-4">
           <GithubTokenForm currentToken={user?.githubToken ?? null} />
+          <Separator />
+          <AIConfigForm />
         </TabsContent>
       </div>
     </Tabs>
@@ -190,13 +199,14 @@ export function SettingsPanel({
 function GithubTokenForm({ currentToken }: { currentToken: string | null }) {
   const [state, formAction, pending] = useActionState(saveGithubToken, {});
 
+  useEffect(() => {
+    if (state?.success) {
+      toast.success(state.success);
+    }
+  }, [state?.success]);
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      {state?.success && (
-        <div className="rounded-lg bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-          {state.success}
-        </div>
-      )}
       {state?.errors?.form?.map((error: string) => (
         <p key={error} className="text-sm text-destructive">{error}</p>
       ))}
@@ -215,6 +225,49 @@ function GithubTokenForm({ currentToken }: { currentToken: string | null }) {
       </div>
       <Button type="submit" disabled={pending} className="w-fit">
         {pending ? "Saving..." : "Save token"}
+      </Button>
+    </form>
+  );
+}
+
+function AIConfigForm() {
+  const [state, formAction, pending] = useActionState(saveAIConfig, {});
+
+  useEffect(() => {
+    if (state?.success) toast.success(state.success);
+  }, [state?.success]);
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <h3 className="text-sm font-medium">AI Provider</h3>
+      {state?.errors?.form?.map((error: string) => (
+        <p key={error} className="text-sm text-destructive">{error}</p>
+      ))}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="ai-provider">Provider</Label>
+        <Select name="aiProvider" defaultValue="">
+          <SelectTrigger>
+            <SelectValue placeholder="Select provider..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="openai">OpenAI</SelectItem>
+            <SelectItem value="anthropic">Anthropic</SelectItem>
+            <SelectItem value="google">Google Gemini</SelectItem>
+            <SelectItem value="groq">Groq</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="ai-api-key">API Key</Label>
+        <Input
+          id="ai-api-key"
+          name="aiApiKey"
+          type="password"
+          placeholder="sk-..."
+        />
+      </div>
+      <Button type="submit" disabled={pending} size="sm" className="w-fit">
+        {pending ? "Saving..." : "Save"}
       </Button>
     </form>
   );

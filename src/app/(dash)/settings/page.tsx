@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui";
 import { getSession } from "@/lib/auth";
 import { ProfileForm } from "@/components/profile-form";
 
@@ -10,16 +10,12 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div>
-        <h2 className="text-lg font-semibold">Settings</h2>
-        <p className="text-sm text-muted-foreground">Manage your profile and account settings.</p>
+        <h2 className="text-lg font-semibold">Profile</h2>
+        <p className="text-sm text-muted-foreground">Manage your personal information and profile picture.</p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Update your personal information and profile picture.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <ProfileForm user={user} />
         </CardContent>
       </Card>

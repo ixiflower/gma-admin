@@ -12,10 +12,11 @@ import { uploadImage } from "@/lib/cloudinary";
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   bio: z.string().max(500).optional(),
+  username: z.string().max(30).optional(),
 });
 
 export type ProfileState = {
-  errors?: { name?: string[]; bio?: string[]; form?: string[] };
+  errors?: { name?: string[]; bio?: string[]; username?: string[]; form?: string[] };
   success?: string;
 };
 
@@ -29,6 +30,7 @@ export async function updateProfile(
   const parsed = profileSchema.safeParse({
     name: formData.get("name"),
     bio: formData.get("bio"),
+    username: formData.get("username"),
   });
 
   if (!parsed.success) {
@@ -49,6 +51,7 @@ export async function updateProfile(
   const data: Record<string, unknown> = {
     name: parsed.data.name,
     bio: parsed.data.bio ?? "",
+    username: parsed.data.username?.trim() || null,
     updatedAt: new Date(),
   };
 
@@ -76,4 +79,23 @@ export async function saveGithubToken(
 
   revalidatePath("/settings");
   return { success: "GitHub token saved." };
+}
+
+export async function saveAIConfig(
+  _state: { errors?: { form?: string[] }; success?: string },
+  formData: FormData,
+): Promise<{ errors?: { form?: string[] }; success?: string }> {
+  const user = await getSession();
+  if (!user) return { errors: { form: ["Not authenticated."] } };
+
+  const provider = formData.get("aiProvider") as string;
+  const apiKey = formData.get("aiApiKey") as string;
+
+  await db
+    .update(users)
+    .set({ aiProvider: provider || null, aiApiKey: apiKey || null })
+    .where(eq(users.id, user.id));
+
+  revalidatePath("/settings");
+  return { success: "AI provider saved." };
 }

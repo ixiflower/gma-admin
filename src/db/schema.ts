@@ -16,7 +16,10 @@ export const users = pgTable(
     password: varchar("password", { length: 255 }).notNull().default(""),
     image: text("image"),
     bio: text("bio"),
+    username: text("username"),
     githubToken: text("github_token"),
+    aiProvider: text("ai_provider"),
+    aiApiKey: text("ai_api_key"),
     role: text("role").notNull().default("member"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -69,3 +72,39 @@ export const todos = pgTable("todos", {
 
 export type Todo = typeof todos.$inferSelect;
 export type NewTodo = typeof todos.$inferInsert;
+
+export const notes = pgTable("notes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default("Untitled"),
+  content: text("content").default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Note = typeof notes.$inferSelect;
+export type NewNote = typeof notes.$inferInsert;
+
+export const teams = pgTable("teams", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  ownerId: integer("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Team = typeof teams.$inferSelect;
+
+export const teamMembers = pgTable("team_members", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+});

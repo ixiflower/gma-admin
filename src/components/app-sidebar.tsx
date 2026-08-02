@@ -17,6 +17,7 @@ import {
   NotebookPen,
   CheckSquare,
   FolderGit2,
+  Sparkles,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,8 +51,9 @@ import { logout } from "@/lib/auth";
 const items: { title: string; href: string; icon: LucideIcon }[] = [
   { title: "Dashboard", href: "/", icon: Home },
   { title: "Chat", href: "/chat", icon: MessageCircle },
+  { title: "AI Chat", href: "/ai", icon: Sparkles },
   { title: "Projects", href: "/projects", icon: FolderGit2 },
-  { title: "Users", href: "/users", icon: Users },
+  { title: "Team", href: "/team", icon: Users },
   { title: "Notes", href: "/notes", icon: NotebookPen },
   { title: "Todos", href: "/todos", icon: CheckSquare },
 ];
@@ -59,7 +61,7 @@ const items: { title: string; href: string; icon: LucideIcon }[] = [
 export function AppSidebar({
   user,
 }: {
-  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; githubToken: string | null } | null;
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; username: string | null; githubToken: string | null; aiProvider: string | null; aiApiKey: string | null } | null;
 }) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -117,7 +119,7 @@ export function AppSidebar({
       <SidebarRail />
 
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
@@ -135,7 +137,7 @@ function ProfileAvatar({
   user,
   onOpenSettings,
 }: {
-  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; githubToken: string | null } | null;
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; username: string | null; githubToken: string | null; aiProvider: string | null; aiApiKey: string | null } | null;
   onOpenSettings: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -166,6 +168,11 @@ function ProfileAvatar({
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium leading-none">{user?.name ?? "User"}</p>
+              {user?.username ? (
+                <p className="text-xs leading-none text-muted-foreground">@{user.username}</p>
+              ) : (
+                <p className="text-xs leading-none text-red-500">You do not have a username</p>
+              )}
               <p className="text-xs leading-none text-muted-foreground">
                 {user?.email ?? ""}
               </p>

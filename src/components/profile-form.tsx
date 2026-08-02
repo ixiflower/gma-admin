@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 export function ProfileForm({
   user,
 }: {
-  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null } | null;
+  user: { id: number; name: string; email: string; role: string; image: string | null; bio: string | null; username: string | null } | null;
 }) {
   const [state, formAction, pending] = useActionState<ProfileState, FormData>(
     updateProfile,
@@ -73,6 +73,14 @@ export function ProfileForm({
         <Label htmlFor="name">Display name</Label>
         <Input id="name" name="name" defaultValue={user?.name ?? ""} required />
         {state?.errors?.name?.map((error) => (
+          <p key={error} className="text-sm text-destructive">{error}</p>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="username">Username</Label>
+        <Input id="username" name="username" defaultValue={user?.username ?? ""} placeholder="@username" />
+        {state?.errors?.username?.map((error) => (
           <p key={error} className="text-sm text-destructive">{error}</p>
         ))}
       </div>

@@ -23,7 +23,10 @@ export async function getSession() {
       role: users.role,
       image: users.image,
       bio: users.bio,
+      username: users.username,
       githubToken: users.githubToken,
+      aiProvider: users.aiProvider,
+      aiApiKey: users.aiApiKey,
     })
     .from(users)
     .where(eq(users.id, parseInt(userId)))

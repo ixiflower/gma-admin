@@ -89,6 +89,10 @@ export function ChatRoom({
 
   const selectedUser = users.find((u) => u.name === selectedChat);
 
+  const filteredUsers = users.filter(
+    (u) => u.id !== currentUserId && u.name.toLowerCase().includes(userQuery.toLowerCase()),
+  );
+
   React.useEffect(() => {
     markAllRead(currentUserId);
   }, [currentUserId]);
@@ -119,11 +123,7 @@ export function ChatRoom({
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-1">
-          {users
-            .filter((u) =>
-              u.name.toLowerCase().includes(userQuery.toLowerCase()),
-            )
-            .map((u) => (
+          {(userQuery.length >= 2 ? filteredUsers : []).map((u) => (
             <button
               key={u.id}
               onClick={() => setSelectedChat(u.name)}
@@ -145,6 +145,12 @@ export function ChatRoom({
               <span className="truncate">{u.name}</span>
             </button>
           ))}
+          {userQuery.length >= 2 && filteredUsers.length === 0 && (
+            <p className="px-2 py-4 text-center text-xs text-muted-foreground">No users found</p>
+          )}
+          {userQuery.length < 2 && (
+            <p className="px-2 py-4 text-center text-xs text-muted-foreground">Search for a user to start chatting</p>
+          )}
         </div>
         <div
           className="absolute -right-1 top-0 z-10 h-full w-1.5 cursor-col-resize hover:bg-primary/30"

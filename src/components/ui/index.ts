@@ -13,6 +13,7 @@ export * from "./dropdown-menu";
 export * from "./form";
 export * from "./input";
 export * from "./label";
+export * from "./marker";
 export * from "./message";
 export * from "./message-scroller";
 export * from "./radio-group";

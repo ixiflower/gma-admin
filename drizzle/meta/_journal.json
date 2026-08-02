@@ -50,6 +50,20 @@
       "when": 1785599392693,
       "tag": "0006_polite_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785664705024,
+      "tag": "0007_amazing_calypso",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785666821005,
+      "tag": "0008_lyrical_next_avengers",
+      "breakpoints": true
     }
   ]
 }
