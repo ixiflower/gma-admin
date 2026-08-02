@@ -3,51 +3,40 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 
-interface Star {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  opacity: number;
-  duration: number;
-  delay: number;
-}
-
-function seedRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+function generateStars(count: number) {
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * Math.PI * 2;
+    const radius = 0.1 + (i * 0.7) % 0.9;
+    return {
+      id: i,
+      x: 50 + Math.cos(angle) * radius * 50,
+      y: 50 + Math.sin(angle) * radius * 50,
+      size: 0.8 + (i % 4) * 0.5,
+      duration: 2 + (i % 6) * 1.1,
+      delay: i * 0.04,
+      opacity: 0.15 + (i % 7) * 0.07,
+    };
+  });
 }
 
 export function StarsBackground() {
-  const stars = useMemo(() => {
-    const rng = seedRandom(42);
-    return Array.from({ length: 100 }, (_, i) => ({
-      id: i,
-      x: rng() * 100,
-      y: rng() * 100,
-      size: 1 + rng() * 2.5,
-      opacity: 0.15 + rng() * 0.5,
-      duration: 1.5 + rng() * 3,
-      delay: rng() * 3,
-    }));
-  }, []);
+  const stars = useMemo(() => generateStars(130), []);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
       {stars.map((star) => (
         <motion.div
           key={star.id}
-          className="absolute rounded-full bg-foreground/30"
+          className="absolute rounded-full bg-foreground"
           style={{
             left: `${star.x}%`,
             top: `${star.y}%`,
             width: star.size,
             height: star.size,
           }}
-          animate={{ opacity: [star.opacity * 0.3, star.opacity, star.opacity * 0.3] }}
+          animate={{
+            opacity: [star.opacity, star.opacity * 3.5, star.opacity],
+          }}
           transition={{
             duration: star.duration,
             delay: star.delay,
