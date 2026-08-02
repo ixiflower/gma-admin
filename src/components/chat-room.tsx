@@ -28,10 +28,12 @@ export function ChatRoom({
   messages: initialMessages,
   users,
   currentUserId,
+  lastMessages,
 }: {
   messages: MessageWithAuthor[];
   users: User[];
   currentUserId: number;
+  lastMessages: Record<number, { body: string; createdAt: Date }>;
 }) {
   const [query, setQuery] = React.useState("");
   const [userQuery, setUserQuery] = React.useState("");
@@ -160,7 +162,19 @@ export function ChatRoom({
                     .slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <span className="truncate">{u.name}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="truncate text-sm">{u.name}</span>
+                  {lastMessages[u.id] && (
+                    <span className="shrink-0 text-[0.6rem] text-muted-foreground">
+                      {new Date(lastMessages[u.id].createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  {lastMessages[u.id]?.body ?? "No messages yet"}
+                </p>
+              </div>
             </button>
           ))}
           {userQuery.length >= 2 && filteredUsers.length === 0 && (
