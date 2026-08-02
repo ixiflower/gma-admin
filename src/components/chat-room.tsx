@@ -146,7 +146,17 @@ export function ChatRoom({
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-1">
-          {(userQuery.length >= 2 ? filteredUsers : []).map((u) => (
+          {(userQuery.length >= 1
+            ? filteredUsers
+            : users
+                .filter((u) => u.id !== currentUserId && chattedUserIds.includes(u.id))
+                .sort((a, b) => {
+                  const la = lastMessages[a.id];
+                  const lb = lastMessages[b.id];
+                  if (!la || !lb) return 0;
+                  return new Date(lb.createdAt).getTime() - new Date(la.createdAt).getTime();
+                })
+          ).map((u) => (
             <button
               key={u.id}
               onClick={() => setSelectedChat(u.name)}
@@ -180,10 +190,10 @@ export function ChatRoom({
               </div>
             </button>
           ))}
-          {userQuery.length >= 2 && filteredUsers.length === 0 && (
+          {userQuery.length >= 1 && filteredUsers.length === 0 && (
             <p className="px-2 py-4 text-center text-xs text-muted-foreground">No users found</p>
           )}
-          {userQuery.length < 2 && (
+          {userQuery.length < 1 && users.filter((u) => u.id !== currentUserId && chattedUserIds.includes(u.id)).length === 0 && (
             <p className="px-2 py-4 text-center text-xs text-muted-foreground">Search for a user to start chatting</p>
           )}
         </div>
