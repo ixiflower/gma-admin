@@ -19,7 +19,6 @@ import {
   Pencil,
   Paperclip,
   Phone,
-  Video,
 } from "lucide-react";
 
 import { sendMessage, toggleReaction, markAllRead, type SendState, type MessageWithAuthor } from "@/app/(dash)/chat/actions";
@@ -45,10 +44,13 @@ export function ChatRoom({
   const [query, setQuery] = React.useState("");
   const [userQuery, setUserQuery] = React.useState("");
   const [rightPanel, setRightPanel] = React.useState<"users" | "search">("users");
-  const [selectedChat, setSelectedChat] = React.useState(users[0]?.name ?? "");
-  const [showUsers, setShowUsers] = React.useState<boolean>(true);
+  const [selectedChat, setSelectedChat] = React.useState<string | null>(null);
+  const [showUsers, setShowUsers] = React.useState<boolean>(false);
 
   React.useEffect(() => {
+    const cookie = document.cookie.split("; ").find((r) => r.startsWith("chat_sidebar="));
+    if (cookie) setShowUsers(cookie.split("=")[1] === "1");
+  }, []);
     const cookie = document.cookie
       .split("; ")
       .find((row) => row.startsWith("chat_sidebar="));
@@ -209,13 +211,10 @@ export function ChatRoom({
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium">{selectedChat}</span>
-          <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Audio call">
-            <Phone className="size-4" />
-          </button>
-          <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Video call">
-            <Video className="size-4" />
-          </button>
-          <div className="ml-auto flex items-center gap-1">
+              <div className="ml-auto flex items-center gap-1">
+                <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Audio call">
+                  <Phone className="size-4" />
+                </button>
             <button
               onClick={() => toggleUsersPanel()}
               className="hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:inline-flex"
