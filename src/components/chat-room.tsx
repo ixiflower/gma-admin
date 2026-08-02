@@ -21,6 +21,7 @@ import { sendMessage, toggleReaction, markAllRead, type SendState, type MessageW
 import { Avatar, AvatarFallback, AvatarImage, Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input, Label, Separator, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup } from "@/components/ui/message";
+import { getSharedTeams } from "@/app/(dash)/team/actions";
 import type { User } from "@/db/schema";
 
 export function ChatRoom({
@@ -48,6 +49,7 @@ export function ChatRoom({
   }, []);
   const [sidebarW, setSidebarW] = React.useState(240);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [sharedTeams, setSharedTeams] = React.useState<{ id: number; name: string }[]>([]);
 
   const toggleUsersPanel = React.useCallback(() => {
     setShowUsers((prev) => {
@@ -88,6 +90,14 @@ export function ChatRoom({
       : initialMessages;
 
   const selectedUser = users.find((u) => u.name === selectedChat);
+
+  React.useEffect(() => {
+    if (selectedUser && currentUserId) {
+      getSharedTeams(currentUserId, selectedUser.id).then(setSharedTeams);
+    } else {
+      setSharedTeams([]);
+    }
+  }, [selectedChat, selectedUser?.id, currentUserId]);
 
   const filteredUsers = users.filter(
     (u) => u.id !== currentUserId && u.name.toLowerCase().includes(userQuery.toLowerCase()),
@@ -357,6 +367,15 @@ export function ChatRoom({
                     <Badge variant="outline" className="mt-1 capitalize">
                       {selectedUser.role}
                     </Badge>
+                    {sharedTeams.length > 0 && (
+                      <div className="mt-2 flex flex-wrap justify-center gap-1">
+                        {sharedTeams.map((t) => (
+                          <Badge key={t.id} variant="secondary" className="text-[0.6rem]">
+                            👥 {t.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {selectedUser.bio && (
                     <p className="text-center text-xs text-muted-foreground">

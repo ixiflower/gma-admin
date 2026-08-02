@@ -66,6 +66,7 @@ export const todos = pgTable("todos", {
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   completed: integer("completed").notNull().default(0),
+  status: text("status").notNull().default("todo"),
   priority: text("priority").notNull().default("medium"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

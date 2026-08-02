@@ -16,7 +16,7 @@ import {
   SelectValue,
   Separator,
 } from "@/components/ui";
-import { Bell, CreditCard, Link2, Palette, Shield, User } from "lucide-react";
+import { Bell, Bot, CreditCard, Link2, Palette, Shield, User } from "lucide-react";
 import { saveGithubToken, saveAIConfig } from "@/lib/profile-actions";
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
@@ -52,6 +52,10 @@ export function SettingsPanel({
         <TabsTrigger value="connect" className="w-full justify-start gap-2">
           <Link2 className="size-3.5" />
           Connect
+        </TabsTrigger>
+        <TabsTrigger value="ai" className="w-full justify-start gap-2">
+          <Bot className="size-3.5" />
+          AI Provider
         </TabsTrigger>
       </TabsList>
 
@@ -188,7 +192,9 @@ export function SettingsPanel({
 
         <TabsContent value="connect" className="flex flex-col gap-4">
           <GithubTokenForm currentToken={user?.githubToken ?? null} />
-          <Separator />
+        </TabsContent>
+
+        <TabsContent value="ai" className="flex flex-col gap-4">
           <AIConfigForm />
         </TabsContent>
       </div>
