@@ -38,7 +38,7 @@ export default async function ChatPage() {
         users={allUsers}
         currentUserId={uid}
         lastMessages={lastMessages}
-        chattedUserIds={chattedUserIds}
+        chattedUserIds={Array.from(chattedUserIds)}
       />
     </div>
   );

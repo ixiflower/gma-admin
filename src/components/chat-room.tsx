@@ -39,7 +39,7 @@ export function ChatRoom({
   users: User[];
   currentUserId: number;
   lastMessages: Record<number, { body: string; createdAt: Date }>;
-  chattedUserIds: Set<number>;
+  chattedUserIds: number[];
 }) {
   const [query, setQuery] = React.useState("");
   const [userQuery, setUserQuery] = React.useState("");
@@ -446,7 +446,7 @@ export function ChatRoom({
               ) : (
                 <div className="flex flex-col gap-0.5 p-2">
                   {users
-                    .filter((u) => chattedUserIds.has(u.id))
+                    .filter((u) => chattedUserIds.includes(u.id))
                     .sort((a, b) => {
                       const la = lastMessages[a.id];
                       const lb = lastMessages[b.id];
@@ -478,7 +478,7 @@ export function ChatRoom({
                         </div>
                       </button>
                     ))}
-                  {users.filter((u) => chattedUserIds.has(u.id)).length === 0 && (
+                  {users.filter((u) => chattedUserIds.includes(u.id)).length === 0 && (
                     <p className="py-4 text-center text-xs text-muted-foreground">No conversations yet</p>
                   )}
                 </div>
