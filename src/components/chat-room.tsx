@@ -15,6 +15,11 @@ import {
   ImageIcon,
   Film,
   FileText,
+  Share2,
+  Pencil,
+  Paperclip,
+  Phone,
+  Video,
 } from "lucide-react";
 
 import { sendMessage, toggleReaction, markAllRead, type SendState, type MessageWithAuthor } from "@/app/(dash)/chat/actions";
@@ -29,11 +34,13 @@ export function ChatRoom({
   users,
   currentUserId,
   lastMessages,
+  chattedUserIds,
 }: {
   messages: MessageWithAuthor[];
   users: User[];
   currentUserId: number;
   lastMessages: Record<number, { body: string; createdAt: Date }>;
+  chattedUserIds: Set<number>;
 }) {
   const [query, setQuery] = React.useState("");
   const [userQuery, setUserQuery] = React.useState("");
@@ -202,6 +209,12 @@ export function ChatRoom({
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium">{selectedChat}</span>
+          <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Audio call">
+            <Phone className="size-4" />
+          </button>
+          <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Video call">
+            <Video className="size-4" />
+          </button>
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => toggleUsersPanel()}
@@ -438,9 +451,44 @@ export function ChatRoom({
                   </Tabs>
                 </div>
               ) : (
-                <p className="p-4 text-center text-xs text-muted-foreground">
-                  Select a user to view their profile.
-                </p>
+                <div className="flex flex-col gap-0.5 p-2">
+                  {users
+                    .filter((u) => chattedUserIds.has(u.id))
+                    .sort((a, b) => {
+                      const la = lastMessages[a.id];
+                      const lb = lastMessages[b.id];
+                      if (!la || !lb) return 0;
+                      return new Date(lb.createdAt).getTime() - new Date(la.createdAt).getTime();
+                    })
+                    .map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => setSelectedChat(u.name)}
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted"
+                      >
+                        <Avatar className="size-5 shrink-0">
+                          <AvatarImage src={u.image ?? undefined} />
+                          <AvatarFallback className="text-[0.55rem]">{u.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="truncate text-xs font-medium">{u.name}</span>
+                            {lastMessages[u.id] && (
+                              <span className="shrink-0 text-[0.6rem] text-muted-foreground">
+                                {new Date(lastMessages[u.id].createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="truncate text-[0.6rem] text-muted-foreground">
+                            {lastMessages[u.id]?.body ?? ""}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  {users.filter((u) => chattedUserIds.has(u.id)).length === 0 && (
+                    <p className="py-4 text-center text-xs text-muted-foreground">No conversations yet</p>
+                  )}
+                </div>
               )}
             </div>
           </>

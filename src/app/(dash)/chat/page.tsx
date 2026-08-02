@@ -14,6 +14,7 @@ export default async function ChatPage() {
   const uid = session?.id ?? 0;
 
   const lastMessages: Record<number, { body: string; createdAt: Date }> = {};
+  const chattedUserIds = new Set<number>();
   for (const u of allUsers) {
     if (u.id === uid) continue;
     const msgs = allMessages.filter(
@@ -26,6 +27,7 @@ export default async function ChatPage() {
         body: msgs[msgs.length - 1].body,
         createdAt: msgs[msgs.length - 1].createdAt,
       };
+      chattedUserIds.add(u.id);
     }
   }
 
@@ -36,6 +38,7 @@ export default async function ChatPage() {
         users={allUsers}
         currentUserId={uid}
         lastMessages={lastMessages}
+        chattedUserIds={chattedUserIds}
       />
     </div>
   );
