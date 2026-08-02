@@ -26,7 +26,6 @@ import { Avatar, AvatarFallback, AvatarImage, Badge, Button, DropdownMenu, Dropd
 import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup } from "@/components/ui/message";
 import { getSharedTeams } from "@/app/(dash)/team/actions";
-import { getSharedTeams } from "@/app/(dash)/team/actions";
 import type { User } from "@/db/schema";
 
 export function ChatRoom({
@@ -199,7 +198,7 @@ export function ChatRoom({
           <Avatar className="size-5">
             <AvatarFallback className="text-[0.55rem]">
               {selectedChat
-                .split(" ")
+                ?.split(" ")
                 .map((n) => n[0])
                 .join("")
                 .slice(0, 2)}
@@ -531,7 +530,7 @@ function Reactions({ msg }: { msg: MessageWithAuthor }) {
           </button>
         ))}
       </div>
-    </div>
+    </>
   );
 }
 
