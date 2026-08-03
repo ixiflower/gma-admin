@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import { teams, teamMembers, users } from "@/db/schema";
@@ -73,8 +73,23 @@ export async function getAllUsers() {
 }
 
 export async function getSharedTeams(userIdA: number, userIdB: number) {
-  const rows = await db.execute(
-    sql`SELECT t.id, t.name FROM teams t JOIN team_members tm1 ON t.id = tm1.team_id AND tm1.user_id = ${userIdA} JOIN team_members tm2 ON t.id = tm2.team_id AND tm2.user_id = ${userIdB}`
-  );
-  return rows.rows as { id: number; name: string }[];
+  const myTeams = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(eq(teamMembers.userId, userIdA));
+
+  const theirTeams = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(eq(teamMembers.userId, userIdB));
+
+  const myIds = new Set(myTeams.map((t) => t.teamId));
+  const sharedIds = theirTeams.filter((t) => myIds.has(t.teamId)).map((t) => t.teamId);
+
+  if (sharedIds.length === 0) return [];
+
+  return db
+    .select({ id: teams.id, name: teams.name })
+    .from(teams)
+    .where(inArray(teams.id, sharedIds));
 }
