@@ -70,6 +70,7 @@ export const todos = pgTable("todos", {
   completed: integer("completed").notNull().default(0),
   status: text("status").notNull().default("todo"),
   priority: text("priority").notNull().default("medium"),
+  repo: text("repo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -83,6 +84,7 @@ export const notes = pgTable("notes", {
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull().default("Untitled"),
   content: text("content").default(""),
+  repo: text("repo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

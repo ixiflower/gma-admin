@@ -84,14 +84,12 @@ export default async function ProjectsPage() {
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <a
-                      href={repo.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      href={`/projects/${repo.full_name}`}
                       className="truncate hover:underline"
                     >
                       {repo.name}
-                    </a>
+                    </Link>
                     <Badge variant={repo.private ? "secondary" : "outline"} className="text-[0.6rem]">
                       {repo.private ? "Private" : "Public"}
                     </Badge>
@@ -112,27 +110,29 @@ export default async function ProjectsPage() {
                 </a>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                {repo.language && (
+            <Link href={`/projects/${repo.full_name}`}>
+              <CardContent>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  {repo.language && (
+                    <span className="flex items-center gap-1">
+                      <span className="size-2 rounded-full bg-primary" />
+                      {repo.language}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
-                    <span className="size-2 rounded-full bg-primary" />
-                    {repo.language}
+                    <Star className="size-3" />
+                    {repo.stargazers_count}
                   </span>
-                )}
-                <span className="flex items-center gap-1">
-                  <Star className="size-3" />
-                  {repo.stargazers_count}
-                </span>
-                <span className="flex items-center gap-1">
-                  <GitFork className="size-3" />
-                  {repo.forks_count}
-                </span>
-                <span className="ml-auto">
-                  {new Date(repo.updated_at).toLocaleDateString()}
-                </span>
-              </div>
-            </CardContent>
+                  <span className="flex items-center gap-1">
+                    <GitFork className="size-3" />
+                    {repo.forks_count}
+                  </span>
+                  <span className="ml-auto">
+                    {new Date(repo.updated_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </CardContent>
+            </Link>
           </Card>
         ))}
       </div>
