@@ -16,9 +16,9 @@ import {
   SelectValue,
   Separator,
 } from "@/components/ui";
-import { Bell, Bot, CreditCard, Link2, Palette, Shield, User } from "lucide-react";
+import { Bell, Bot, CreditCard, Link2, Palette, Shield, User, Sparkles, CheckCircle2 } from "lucide-react";
 import { saveGithubToken, saveAIConfig } from "@/lib/profile-actions";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function SettingsPanel({
@@ -238,10 +238,19 @@ function GithubTokenForm({ currentToken }: { currentToken: string | null }) {
 
 function AIConfigForm() {
   const [state, formAction, pending] = useActionState(saveAIConfig, {});
+  const [selected, setSelected] = useState("");
+  const [apiKey, setApiKey] = useState("");
 
   useEffect(() => {
     if (state?.success) toast.success(state.success);
   }, [state?.success]);
+
+  const providers = [
+    { key: "openai", name: "OpenAI", color: "hover:border-emerald-400", icon: "🤖" },
+    { key: "anthropic", name: "Anthropic", color: "hover:border-orange-400", icon: "🧠" },
+    { key: "google", name: "Gemini", color: "hover:border-blue-400", icon: "💎" },
+    { key: "groq", name: "Groq", color: "hover:border-amber-400", icon: "⚡" },
+  ];
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -249,32 +258,41 @@ function AIConfigForm() {
       {state?.errors?.form?.map((error: string) => (
         <p key={error} className="text-sm text-destructive">{error}</p>
       ))}
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="ai-provider">Provider</Label>
-        <Select name="aiProvider" defaultValue="">
-          <SelectTrigger>
-            <SelectValue placeholder="Select provider..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="openai">OpenAI</SelectItem>
-            <SelectItem value="anthropic">Anthropic</SelectItem>
-            <SelectItem value="google">Google Gemini</SelectItem>
-            <SelectItem value="groq">Groq</SelectItem>
-          </SelectContent>
-        </Select>
+
+      <div className="grid grid-cols-2 gap-3">
+        {providers.map(({ key, name, color, icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setSelected(key)}
+            className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${selected === key ? `border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ${color}` : "border-border hover:border-muted-foreground/30"}`}
+          >
+            <span className="text-2xl">{icon}</span>
+            <span className="text-xs font-medium">{name}</span>
+            {selected === key && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+          </button>
+        ))}
       </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="ai-api-key">API Key</Label>
-        <Input
-          id="ai-api-key"
-          name="aiApiKey"
-          type="password"
-          placeholder="sk-..."
-        />
-      </div>
-      <Button type="submit" disabled={pending} size="sm" className="w-fit">
-        {pending ? "Saving..." : "Save"}
-      </Button>
+
+      {selected && (
+        <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+          <input type="hidden" name="aiProvider" value={selected} />
+          <Label htmlFor="ai-api-key" className="text-xs">
+            {providers.find((p) => p.key === selected)?.name} API Key
+          </Label>
+          <Input
+            id="ai-api-key"
+            name="aiApiKey"
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={selected === "anthropic" ? "sk-ant-..." : "sk-..."}
+          />
+          <Button type="submit" disabled={pending || !apiKey.trim()} size="sm" className="w-fit">
+            {pending ? "Saving..." : "Save key"}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
