@@ -154,6 +154,7 @@ function ProfileAvatar({
       <DropdownMenuTrigger>
         <Avatar
           className="size-7 shrink-0 cursor-pointer transition-opacity hover:opacity-80"
+          onClick={() => (window.location.href = "/settings")}
           onContextMenu={(e: React.MouseEvent) => {
             e.preventDefault();
             setOpen(true);
@@ -181,7 +182,7 @@ function ProfileAvatar({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => window.location.href = "/settings"}>
             <UserCircle />
             My Profile
           </DropdownMenuItem>
