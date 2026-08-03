@@ -55,6 +55,9 @@ export function ChatRoom({
   const [sidebarW, setSidebarW] = React.useState(240);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [sharedTeams, setSharedTeams] = React.useState<{ id: number; name: string }[]>([]);
+  const [messages, setMessages] = React.useState(initialMessages);
+
+  React.useEffect(() => { setMessages(initialMessages); }, [initialMessages]);
 
   const toggleUsersPanel = React.useCallback(() => {
     setShowUsers((prev) => {
@@ -88,7 +91,7 @@ export function ChatRoom({
   const selectedUser = users.find((u) => u.name === selectedChat);
 
   const conversationMessages = selectedUser
-    ? initialMessages.filter(
+    ? messages.filter(
         (m) =>
           (m.userId === currentUserId && m.recipientId === selectedUser.id) ||
           (m.userId === selectedUser.id && m.recipientId === currentUserId),
@@ -124,7 +127,7 @@ export function ChatRoom({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [initialMessages.length]);
+  }, [messages.length]);
 
   return (
     <div className="flex flex-1 gap-0 overflow-hidden">
@@ -304,7 +307,11 @@ export function ChatRoom({
           <div className="h-0" />
         </div>
 
-            <ChatInput recipientId={selectedUser?.id ?? undefined} />
+            <ChatInput
+              recipientId={selectedUser?.id ?? undefined}
+              currentUserId={currentUserId}
+              onSend={(msg) => setMessages((prev) => [...prev, msg])}
+            />
       </div>
 
       {showUsers && (
@@ -544,42 +551,56 @@ function Reactions({ msg }: { msg: MessageWithAuthor }) {
   );
 }
 
-function ChatInput({ recipientId }: { recipientId?: number }) {
-  const [state, formAction, pending] = useActionState<SendState, FormData>(
-    sendMessage,
-    {},
-  );
+function ChatInput({
+  recipientId,
+  currentUserId,
+  onSend,
+}: {
+  recipientId?: number;
+  currentUserId: number;
+  onSend: (msg: MessageWithAuthor) => void;
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [pending, setPending] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const body = inputRef.current?.value?.trim();
+    if (!body || pending) return;
+
+    setPending(true);
+    const msg: MessageWithAuthor = {
+      id: Date.now(),
+      userId: currentUserId,
+      recipientId: recipientId ?? null,
+      body,
+      reactions: null,
+      attachment: null,
+      isRead: 0,
+      createdAt: new Date(),
+      author: { id: currentUserId, name: "You" },
+    };
+    onSend(msg);
+    if (inputRef.current) inputRef.current.value = "";
+
+    const fd = new FormData();
+    fd.set("body", body);
+    if (recipientId != null) fd.set("recipientId", String(recipientId));
+    await sendMessage({}, fd);
+    setPending(false);
+  };
 
   return (
-    <form action={formAction} className="shrink-0 border-t px-4 py-3">
+    <form onSubmit={handleSubmit} className="shrink-0 border-t px-4 py-3">
       {recipientId != null && <input type="hidden" name="recipientId" value={recipientId} />}
-      {state.errors?.form?.map((error: string) => (
-        <p key={error} className="mb-1 text-xs text-destructive">
-          {error}
-        </p>
-      ))}
       <div className="flex items-center gap-2">
-        <Label htmlFor="chat-body" className="sr-only">
-          Message
-        </Label>
-        <Input
-          id="chat-body"
-          name="body"
-          placeholder="Type a message..."
-          className="flex-1"
-          required
-          aria-invalid={!!state.errors?.body}
-        />
+        <Label htmlFor="chat-body" className="sr-only">Message</Label>
+        <Input id="chat-body" ref={inputRef} placeholder="Type a message..." className="flex-1" required />
         <Button type="submit" disabled={pending} size="icon-sm">
           <SendHorizonal className="size-4" />
           <span className="sr-only">Send</span>
         </Button>
       </div>
-      {state.errors?.body?.map((error: string) => (
-        <p key={error} className="mt-1 text-xs text-destructive">
-          {error}
-        </p>
-      ))}
     </form>
   );
 }
