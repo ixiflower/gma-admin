@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { and, asc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 
@@ -65,7 +64,6 @@ export async function sendMessage(
   }
 
   revalidatePath("/chat");
-  redirect("/chat");
 }
 
 export async function toggleReaction(messageId: number, emoji: string) {
