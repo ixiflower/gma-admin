@@ -64,6 +64,7 @@ export async function sendMessage(
   }
 
   revalidatePath("/chat");
+  return {};
 }
 
 export async function toggleReaction(messageId: number, emoji: string) {
