@@ -24,7 +24,11 @@ import { toast } from "sonner";
 export function SettingsPanel({
   user,
 }: {
-  user: { githubToken: string | null } | null;
+  user: {
+    githubToken: string | null;
+    aiProvider: string | null;
+    aiApiKey: string | null;
+  } | null;
 }) {
   return (
     <Tabs defaultValue="general" orientation="vertical" className="flex gap-4">
@@ -195,7 +199,7 @@ export function SettingsPanel({
         </TabsContent>
 
         <TabsContent value="ai" className="flex flex-col gap-4">
-          <AIConfigForm />
+          <AIConfigForm user={user} />
         </TabsContent>
       </div>
     </Tabs>
@@ -236,42 +240,80 @@ function GithubTokenForm({ currentToken }: { currentToken: string | null }) {
   );
 }
 
-function AIConfigForm() {
+function AIConfigForm({
+  user,
+}: {
+  user: {
+    aiProvider: string | null;
+    aiApiKey: string | null;
+  } | null;
+}) {
   const [state, formAction, pending] = useActionState(saveAIConfig, {});
   const [selected, setSelected] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [working, setWorking] = useState(
+    user?.aiProvider && user?.aiApiKey ? user.aiProvider : "",
+  );
 
   useEffect(() => {
-    if (state?.success) toast.success(state.success);
+    if (state?.success) {
+      if (state.verified && selected) setWorking(selected);
+      toast.success(state.success);
+    }
   }, [state?.success]);
 
   const providers = [
-    { key: "openai", name: "OpenAI", color: "hover:border-emerald-400", icon: "🤖" },
-    { key: "anthropic", name: "Anthropic", color: "hover:border-orange-400", icon: "🧠" },
-    { key: "google", name: "Gemini", color: "hover:border-blue-400", icon: "💎" },
-    { key: "groq", name: "Groq", color: "hover:border-amber-400", icon: "⚡" },
+    { key: "openai", name: "OpenAI", icon: "🤖" },
+    { key: "anthropic", name: "Anthropic", icon: "🧠" },
+    { key: "google", name: "Gemini", icon: "💎" },
+    { key: "groq", name: "Groq", icon: "⚡" },
   ];
+
+  const workingProvider = working;
+  const hasWorkingKey = (key: string) => workingProvider === key;
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <h3 className="text-sm font-medium">AI Provider</h3>
+      <p className="text-xs text-muted-foreground">
+        Click a provider, enter your API key, and it will be tested. A green
+        border means the key works.
+      </p>
       {state?.errors?.form?.map((error: string) => (
         <p key={error} className="text-sm text-destructive">{error}</p>
       ))}
 
       <div className="grid grid-cols-2 gap-3">
-        {providers.map(({ key, name, color, icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setSelected(key)}
-            className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${selected === key ? `border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 ${color}` : "border-border hover:border-muted-foreground/30"}`}
-          >
-            <span className="text-2xl">{icon}</span>
-            <span className="text-xs font-medium">{name}</span>
-            {selected === key && <CheckCircle2 className="size-3.5 text-emerald-500" />}
-          </button>
-        ))}
+        {providers.map(({ key, name, icon }) => {
+          const working = hasWorkingKey(key);
+          const isSelected = selected === key;
+          const active = working || isSelected;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                setSelected(key);
+                setApiKey("");
+              }}
+              className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                active
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20"
+                  : "border-border hover:border-muted-foreground/30"
+              }`}
+            >
+              <span className="text-2xl">{icon}</span>
+              <span className="text-xs font-medium">{name}</span>
+              {working ? (
+                <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="size-3.5" /> Working
+                </span>
+              ) : isSelected ? (
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+              ) : null}
+            </button>
+          );
+        })}
       </div>
 
       {selected && (
@@ -289,7 +331,7 @@ function AIConfigForm() {
             placeholder={selected === "anthropic" ? "sk-ant-..." : "sk-..."}
           />
           <Button type="submit" disabled={pending || !apiKey.trim()} size="sm" className="w-fit">
-            {pending ? "Saving..." : "Save key"}
+            {pending ? "Testing..." : "Test & save key"}
           </Button>
         </div>
       )}
