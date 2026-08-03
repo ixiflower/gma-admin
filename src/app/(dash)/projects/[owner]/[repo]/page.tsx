@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 import { Badge } from "@/components/ui";
 import { getSession } from "@/lib/auth";
 import { getRepoItems } from "@/app/(dash)/projects/actions";
 import { RepoAdminPanel } from "@/components/repo-admin-panel";
+import { ReadmeViewer } from "@/components/readme-viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -100,7 +99,11 @@ export default async function RepoDetailPage({
           <div className="border-b px-4 py-3 text-sm font-medium">README.md</div>
           <div className="prose prose-sm dark:prose-invert max-w-none overflow-x-auto p-4">
             {readme ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{readme}</ReactMarkdown>
+              <ReadmeViewer
+                readme={readme}
+                repoFullName={`${owner}/${repo}`}
+                defaultBranch={meta.default_branch}
+              />
             ) : (
               <p className="text-muted-foreground">No README found for this repository.</p>
             )}
