@@ -1,5 +1,6 @@
 import {
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -95,6 +96,8 @@ export type NewNote = typeof notes.$inferInsert;
 export const teams = pgTable("teams", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
+  description: text("description"),
+  image: text("image"),
   ownerId: integer("owner_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -113,3 +116,19 @@ export const teamMembers = pgTable("team_members", {
     .references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
+
+export const aiSessions = pgTable("ai_sessions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default("New Chat"),
+  provider: text("provider"),
+  model: text("model"),
+  messages: jsonb("messages").notNull().default("[]"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type AiSession = typeof aiSessions.$inferSelect;
+export type NewAiSession = typeof aiSessions.$inferInsert;

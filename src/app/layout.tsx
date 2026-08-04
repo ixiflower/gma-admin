@@ -21,8 +21,8 @@ export default function RootLayout({
       suppressHydrationWarning
       className="h-full antialiased"
     >
-      <body className="h-full">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <body className="h-full" suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange enableColorScheme={false}>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />
         </ThemeProvider>

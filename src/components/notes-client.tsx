@@ -7,6 +7,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import {
   Bold, Italic, Strikethrough, List, ListOrdered, Quote,
   Undo2, Redo2, Plus, Trash2, Heading1, Heading2, Code,
+  FileText,
 } from "lucide-react";
 
 import { createNote, updateNote, deleteNote } from "@/app/(dash)/notes/actions";
@@ -24,11 +25,18 @@ export function NotesClient({ notes: initialNotes }: { notes: Note[] }) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder: "Start writing..." }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      Placeholder.configure({ placeholder: "Press '/' for commands, or just start typing..." }),
     ],
     content: active?.content ?? "",
     editable: true,
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-full",
+      },
+    },
     onUpdate: ({ editor: ed }) => {
       if (activeId) {
         clearTimeout(saveTimer.current);
@@ -75,7 +83,6 @@ export function NotesClient({ notes: initialNotes }: { notes: Note[] }) {
 
   return (
     <div className="flex min-h-0 flex-1">
-      {/* Sidebar */}
       <div className="flex w-52 shrink-0 flex-col border-r">
         <div className="flex items-center justify-between px-3 py-2">
           <span className="text-xs font-medium text-muted-foreground">All notes</span>
@@ -94,6 +101,7 @@ export function NotesClient({ notes: initialNotes }: { notes: Note[] }) {
                 activeId === note.id && "bg-muted font-medium",
               )}
             >
+              <FileText className={cn("size-3.5 shrink-0", activeId === note.id ? "text-foreground" : "text-muted-foreground")} />
               <span className="flex-1 truncate">{note.title}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
@@ -104,26 +112,23 @@ export function NotesClient({ notes: initialNotes }: { notes: Note[] }) {
             </button>
           ))}
           {notes.length === 0 && (
-            <p className="px-3 py-8 text-center text-xs text-muted-foreground">
-              No notes yet
-            </p>
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">No notes yet</p>
           )}
         </div>
       </div>
 
-      {/* Editor */}
       <div className="flex min-w-0 flex-1 flex-col">
         {active ? (
           <>
-            <div className="flex items-center gap-2 border-b px-4 py-2">
+            <div className="flex shrink-0 items-center gap-2 border-b px-4 py-1.5">
               <Input
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="h-7 border-none px-0 text-sm font-medium shadow-none focus-visible:ring-0"
-                placeholder="Note title..."
+                className="h-7 border-none px-0 text-base font-semibold shadow-none focus-visible:ring-0"
+                placeholder="Untitled"
               />
             </div>
-            <div className="flex items-center gap-0.5 border-b px-2 py-1">
+            <div className="flex shrink-0 items-center gap-0.5 border-b px-4 py-1">
               <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")}>
                 <Bold className="size-3.5" />
               </ToolbarButton>
@@ -161,14 +166,19 @@ export function NotesClient({ notes: initialNotes }: { notes: Note[] }) {
                 <Redo2 className="size-3.5" />
               </ToolbarButton>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <EditorContent editor={editor} className="tiptap flex-1" />
+            <div className="flex-1 overflow-y-auto">
+              <div className="mx-auto h-full max-w-3xl px-8 py-6">
+                <EditorContent editor={editor} className="h-full [&_.tiptap]:h-full [&_.tiptab]:outline-none" />
+              </div>
             </div>
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-center">
-              <p className="text-sm text-muted-foreground">Select a note or create a new one</p>
+              <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+                <FileText className="size-6 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Select a note or create a new one</p>
               <Button variant="outline" size="sm" onClick={handleNew}>
                 <Plus className="size-4" />
                 New note

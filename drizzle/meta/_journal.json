@@ -71,6 +71,20 @@
       "when": 1785772587754,
       "tag": "0009_curvy_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785842925226,
+      "tag": "0010_gigantic_thunderbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785857116378,
+      "tag": "0011_sudden_nova",
+      "breakpoints": true
     }
   ]
 }

@@ -9,12 +9,13 @@ import { getSession } from "@/lib/auth";
 
 export async function addTodo(formData: FormData) {
   const user = await getSession();
-  if (!user) return;
+  if (!user) return null;
   const title = formData.get("title") as string;
   const priority = formData.get("priority") as string;
-  if (!title?.trim()) return;
-  await db.insert(todos).values({ userId: user.id, title: title.trim(), priority: priority || "medium" });
+  if (!title?.trim()) return null;
+  const [row] = await db.insert(todos).values({ userId: user.id, title: title.trim(), priority: priority || "medium" }).returning();
   revalidatePath("/todos");
+  return row;
 }
 
 export async function moveTodo(id: number, status: string) {

@@ -79,38 +79,34 @@ export default async function ProjectsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         {repos.map((repo) => (
-          <Card key={repo.id} className="group transition-shadow hover:shadow-md">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Link
-                      href={`/projects/${repo.full_name}`}
-                      className="truncate hover:underline"
-                    >
-                      {repo.name}
-                    </Link>
-                    <Badge variant={repo.private ? "secondary" : "outline"} className="text-[0.6rem]">
-                      {repo.private ? "Private" : "Public"}
-                    </Badge>
-                  </CardTitle>
-                  {repo.description && (
-                    <CardDescription className="mt-1 line-clamp-2">
-                      {repo.description}
-                    </CardDescription>
-                  )}
+          <Link key={repo.id} href={`/projects/${repo.full_name}`} className="group block">
+            <Card className="h-full transition-shadow hover:shadow-md">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <span className="truncate">{repo.name}</span>
+                      <Badge variant={repo.private ? "secondary" : "outline"} className="text-[0.6rem]">
+                        {repo.private ? "Private" : "Public"}
+                      </Badge>
+                    </CardTitle>
+                    {repo.description && (
+                      <CardDescription className="mt-1 line-clamp-2">
+                        {repo.description}
+                      </CardDescription>
+                    )}
+                  </div>
+                  <a
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="ml-2 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <ExternalLink className="size-4" />
+                  </a>
                 </div>
-                <a
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                >
-                  <ExternalLink className="size-4" />
-                </a>
-              </div>
-            </CardHeader>
-            <Link href={`/projects/${repo.full_name}`}>
+              </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   {repo.language && (
@@ -132,8 +128,8 @@ export default async function ProjectsPage() {
                   </span>
                 </div>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

@@ -6,11 +6,12 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { teams, teamMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { uploadImage } from "@/lib/cloudinary";
 
-export async function createTeam(name: string) {
+export async function createTeam(name: string, description?: string) {
   const user = await getSession();
   if (!user || !name.trim()) return null;
-  const [team] = await db.insert(teams).values({ name: name.trim(), ownerId: user.id }).returning();
+  const [team] = await db.insert(teams).values({ name: name.trim(), description: description?.trim() || null, ownerId: user.id }).returning();
   await db.insert(teamMembers).values({ teamId: team.id, userId: user.id });
   revalidatePath("/team");
   return team;
@@ -19,6 +20,25 @@ export async function createTeam(name: string) {
 export async function deleteTeam(teamId: number) {
   await db.delete(teams).where(eq(teams.id, teamId));
   revalidatePath("/team");
+}
+
+export async function updateTeam(teamId: number, data: { name?: string; description?: string; image?: string }) {
+  const user = await getSession();
+  if (!user) return;
+  await db.update(teams).set(data).where(eq(teams.id, teamId));
+  revalidatePath("/team");
+}
+
+export async function uploadTeamImage(formData: FormData) {
+  const user = await getSession();
+  if (!user) return null;
+  const teamId = Number(formData.get("teamId"));
+  const file = formData.get("file") as File;
+  if (!teamId || !file || !file.size) return null;
+  const url = await uploadImage(file);
+  await db.update(teams).set({ image: url }).where(eq(teams.id, teamId));
+  revalidatePath("/team");
+  return url;
 }
 
 export async function joinTeam(teamId: number) {
