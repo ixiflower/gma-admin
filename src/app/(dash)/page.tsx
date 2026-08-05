@@ -1,6 +1,6 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useTheme } from "@/lib/theme-context";
 import { StarsBackground } from "@/components/animate-ui/components/backgrounds/stars";
 
 export default function Home() {

@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Paperclip,
   X,
+  Pencil,
 } from "lucide-react";
 
 import {
@@ -22,11 +23,13 @@ import {
   getAiSession,
   createSession,
   deleteSession,
+  renameSession,
   askAI,
   getUserAIProvider,
 } from "@/app/(dash)/ai/actions";
 import { saveAIConfig } from "@/lib/profile-actions";
 import { AI_PROVIDERS, getProvider } from "@/lib/ai-providers";
+import { toast } from "sonner";
 import {
   Avatar,
   AvatarFallback,
@@ -94,6 +97,10 @@ export default function AIPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
 
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; session: SessionInfo } | null>(null);
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+
   const loadSessions = useCallback(async () => {
     const data = await listSessions();
     setSessions(data);
@@ -124,6 +131,12 @@ export default function AIPage() {
     }
   }, [messages, loading]);
 
+  useEffect(() => {
+    const handler = () => setContextMenu(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
+
   const openSession = async (id: number) => {
     setSessionId(id);
     setMessages([]);
@@ -147,19 +160,44 @@ export default function AIPage() {
       setSessionId(row.id);
       setMessages([]);
       loadSessions();
+      toast.success("New chat started");
+    } else {
+      toast.error("Failed to create session");
     }
   };
 
   const handleDeleteSession = async (id: number) => {
     try {
       await deleteSession(id);
+      toast.success("Session deleted");
     } catch {
-      // ignore
+      toast.error("Failed to delete session");
     }
     if (sessionId === id) {
       setMessages([]);
       setSessionId(null);
     }
+    loadSessions();
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, s: SessionInfo) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, session: s });
+  };
+
+  const handleRename = async () => {
+    if (!renamingId || !renameTitle.trim()) {
+      setRenamingId(null);
+      return;
+    }
+    try {
+      await renameSession(renamingId, renameTitle.trim());
+      toast.success("Session renamed");
+    } catch {
+      toast.error("Failed to rename session");
+    }
+    setRenamingId(null);
     loadSessions();
   };
 
@@ -208,6 +246,7 @@ export default function AIPage() {
       loadSessions();
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+      toast.error("Failed to get AI response");
     }
     setLoading(false);
   };
@@ -225,9 +264,12 @@ export default function AIPage() {
         setApiKey("");
         setSelectedProvider("");
         loadProvider();
+        toast.success("AI provider saved");
+      } else {
+        toast.error(result.errors?.form?.[0] || "Failed to save provider");
       }
     } catch {
-      // ignore
+      toast.error("Failed to save provider");
     }
     setSavingKey(false);
   };
@@ -251,28 +293,66 @@ export default function AIPage() {
             <p className="px-2 py-4 text-center text-xs text-muted-foreground">No sessions yet</p>
           )}
           {sessions.map((s) => (
-            <div key={s.id} className="group flex items-center gap-1">
-              <button
-                onClick={() => openSession(s.id)}
-                className={`flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent ${
-                  sessionId === s.id ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                }`}
-              >
-                <MessageSquare className="size-3 shrink-0" />
-                <span className="truncate">{s.title}</span>
-              </button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="size-5 shrink-0 opacity-0 group-hover:opacity-100"
-                onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }}
-              >
-                <Trash2 className="size-3" />
-              </Button>
+            <div key={s.id} className="flex items-center gap-1">
+              {renamingId === s.id ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleRename(); }}
+                  className="flex flex-1 items-center gap-1"
+                >
+                  <input
+                    autoFocus
+                    value={renameTitle}
+                    onChange={(e) => setRenameTitle(e.target.value)}
+                    onBlur={handleRename}
+                    onKeyDown={(e) => { if (e.key === "Escape") setRenamingId(null); }}
+                    className="flex-1 rounded-md border bg-background px-2 py-1 text-xs outline-none ring-1 ring-ring"
+                  />
+                </form>
+              ) : (
+                <button
+                  onClick={() => openSession(s.id)}
+                  onContextMenu={(e) => handleContextMenu(e, s)}
+                  className={`flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent ${
+                    sessionId === s.id ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  <MessageSquare className="size-3 shrink-0" />
+                  <span className="truncate">{s.title}</span>
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      {contextMenu && (
+        <div
+          className="fixed z-50 min-w-36 rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={() => {
+              setRenamingId(contextMenu.session.id);
+              setRenameTitle(contextMenu.session.title);
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
+          >
+            <Pencil className="size-3.5" />
+            Rename
+          </button>
+          <button
+            onClick={() => {
+              handleDeleteSession(contextMenu.session.id);
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </button>
+        </div>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col gap-0 overflow-hidden">
         <div className="flex items-center justify-between px-2 pb-3 pt-1">

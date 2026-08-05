@@ -69,6 +69,18 @@ export async function deleteSession(id: number) {
   revalidatePath("/ai");
 }
 
+export async function renameSession(id: number, title: string) {
+  const user = await getSession();
+  if (!user) return;
+  const rows = await db.select({ userId: aiSessions.userId }).from(aiSessions).where(eq(aiSessions.id, id));
+  if (!rows[0] || rows[0].userId !== user.id) return;
+  await db
+    .update(aiSessions)
+    .set({ title, updatedAt: new Date() })
+    .where(eq(aiSessions.id, id));
+  revalidatePath("/ai");
+}
+
 export async function askAI(sessionId: number | null, formData: FormData): Promise<{ reply: string; sessionId: number }> {
   const user = await getSession();
   const message = formData.get("message") as string;

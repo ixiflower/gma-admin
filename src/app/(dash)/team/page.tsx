@@ -17,6 +17,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { getSession } from "@/lib/auth";
+import { toast } from "sonner";
 
 type Team = { id: number; name: string; description: string | null; image: string | null; ownerId: number; createdAt: Date };
 type Member = { id: number; name: string; email: string; image: string | null; role: string; joinedAt: Date };
@@ -26,6 +27,12 @@ interface ContextMenu {
   x: number;
   y: number;
   team: Team;
+}
+
+interface MemberContextMenu {
+  x: number;
+  y: number;
+  member: Member;
 }
 
 export default function TeamPage() {
@@ -47,8 +54,10 @@ export default function TeamPage() {
 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedAddUser, setSelectedAddUser] = useState("");
+  const [addMemberSearch, setAddMemberSearch] = useState("");
 
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+  const [memberContextMenu, setMemberContextMenu] = useState<MemberContextMenu | null>(null);
   const ctxRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +75,11 @@ export default function TeamPage() {
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
+
+  useEffect(() => {
+    setAddMemberSearch("");
+    setSelectedAddUser("");
+  }, [addMemberOpen]);
 
   const loadMembers = useCallback(async (teamId: number) => {
     const m = await getTeamMembers(teamId);
@@ -90,6 +104,14 @@ export default function TeamPage() {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, team: t });
+  };
+
+  const handleMemberContextMenu = (e: React.MouseEvent, m: Member) => {
+    if (!isOwner(selectedTeam)) return;
+    if (m.id === selectedTeam?.ownerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setMemberContextMenu({ x: e.clientX, y: e.clientY, member: m });
   };
 
   const handleCreate = async () => {
@@ -171,6 +193,7 @@ export default function TeamPage() {
     if (!selectedTeam || !selectedAddUser) return;
     await addMember(selectedTeam.id, Number(selectedAddUser));
     setSelectedAddUser("");
+    setAddMemberSearch("");
     setAddMemberOpen(false);
     loadMembers(selectedTeam.id);
   };
@@ -296,17 +319,62 @@ export default function TeamPage() {
                       <DialogContent className="sm:max-w-sm">
                         <DialogHeader>
                           <DialogTitle>Add member</DialogTitle>
-                          <DialogDescription>Select a user to add to {selectedTeam.name}.</DialogDescription>
+                          <DialogDescription>Search for a user to add to {selectedTeam.name}.</DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-3">
-                          <Select value={selectedAddUser} onValueChange={(v) => setSelectedAddUser(v ?? "")}>
-                            <SelectTrigger><SelectValue placeholder="Select user..." /></SelectTrigger>
-                            <SelectContent>
-                              {allUsers.filter((u) => !members.some((m) => m.id === u.id) && u.id !== currentUserId).map((u) => (
-                                <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex flex-col gap-1.5">
+                            <Label htmlFor="add-member-search">Search users</Label>
+                            <Input
+                              id="add-member-search"
+                              value={addMemberSearch}
+                              onChange={(e) => setAddMemberSearch(e.target.value)}
+                              placeholder="Search by name or email..."
+                              autoFocus
+                            />
+                          </div>
+                          <div className="max-h-60 overflow-y-auto border rounded-md p-2">
+                            {addMemberSearch ? (
+                              <>
+                                {allUsers
+                                  .filter((u) => !members.some((m) => m.id === u.id) && u.id !== currentUserId)
+                                  .filter((u) =>
+                                    u.name.toLowerCase().includes(addMemberSearch.toLowerCase()) ||
+                                    u.email.toLowerCase().includes(addMemberSearch.toLowerCase())
+                                  )
+                                  .map((u) => (
+                                    <button
+                                      key={u.id}
+                                      type="button"
+                                      onClick={() => setSelectedAddUser(String(u.id))}
+                                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent ${
+                                        selectedAddUser === String(u.id) ? "bg-accent text-accent-foreground" : ""
+                                      }`}
+                                    >
+                                      <Avatar className="size-6">
+                                        <AvatarImage src={u.image ?? undefined} />
+                                        <AvatarFallback className="text-xs">{u.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1 min-w-0 text-left">
+                                        <p className="font-medium truncate">{u.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                                      </div>
+                                    </button>
+                                  ))
+                                }
+                                {allUsers.filter((u) => !members.some((m) => m.id === u.id) && u.id !== currentUserId).filter((u) =>
+                                  u.name.toLowerCase().includes(addMemberSearch.toLowerCase()) ||
+                                  u.email.toLowerCase().includes(addMemberSearch.toLowerCase())
+                                ).length === 0 && (
+                                  <p className="text-center text-sm text-muted-foreground py-4">No users found</p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-center text-sm text-muted-foreground py-4">Start typing to search for users...</p>
+                            )}
+                            {allUsers.filter((u) => !members.some((m) => m.id === u.id) && u.id !== currentUserId).length === 0 && (
+                              <p className="text-center text-sm text-muted-foreground py-4">All users are already members</p>
+                            )}
+                          </div>
                           <Button onClick={handleAddMember} disabled={!selectedAddUser}>Add</Button>
                         </div>
                       </DialogContent>

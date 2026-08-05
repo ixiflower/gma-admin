@@ -117,6 +117,24 @@ export const teamMembers = pgTable("team_members", {
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
 
+export const teamInvites = pgTable("team_invites", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  inviterId: integer("inviter_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  inviteeId: integer("invitee_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"), // pending | accepted | declined
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type TeamInvite = typeof teamInvites.$inferSelect;
+export type NewTeamInvite = typeof teamInvites.$inferInsert;
+
 export const aiSessions = pgTable("ai_sessions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id")

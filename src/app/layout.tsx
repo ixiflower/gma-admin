@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/lib/theme-context";
+import { InlineScript } from "@/components/inline-script";
 import "./globals.css";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,8 +22,13 @@ export default function RootLayout({
       suppressHydrationWarning
       className="h-full antialiased"
     >
+      <head>
+        <InlineScript
+          html={`try{var d=document.documentElement;var t=localStorage.getItem('theme')||'system';var c=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';d.classList.add(c);d.style.colorScheme=c}catch(e){}`}
+        />
+      </head>
       <body className="h-full" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange enableColorScheme={false}>
+        <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />
         </ThemeProvider>
