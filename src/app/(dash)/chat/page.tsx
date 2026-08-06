@@ -7,7 +7,14 @@ import { desc, eq, or, and, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChatPage() {
+export default async function ChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ user?: string }>;
+}) {
+  const sp = await searchParams;
+  const initialChatId = sp.user ? Number(sp.user) : undefined;
+
   const allMessages = await getMessages();
   const allUsers = await db.select().from(users);
   const session = await getSession();
@@ -39,6 +46,7 @@ export default async function ChatPage() {
         currentUserId={uid}
         lastMessages={lastMessages}
         chattedUserIds={Array.from(chattedUserIds)}
+        initialChatId={Number.isFinite(initialChatId) ? initialChatId : undefined}
       />
     </div>
   );

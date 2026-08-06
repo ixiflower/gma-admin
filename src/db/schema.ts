@@ -70,6 +70,7 @@ export const todos = pgTable("todos", {
   title: text("title").notNull(),
   completed: integer("completed").notNull().default(0),
   status: text("status").notNull().default("todo"),
+  position: integer("position").notNull().default(0),
   priority: text("priority").notNull().default("medium"),
   repo: text("repo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -114,6 +115,7 @@ export const teamMembers = pgTable("team_members", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("viewer"), // viewer | moderator | developer | admin
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
 
@@ -134,6 +136,61 @@ export const teamInvites = pgTable("team_invites", {
 
 export type TeamInvite = typeof teamInvites.$inferSelect;
 export type NewTeamInvite = typeof teamInvites.$inferInsert;
+
+export const teamTasks = pgTable("team_tasks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("todo"), // todo | in_progress | done
+  priority: text("priority").notNull().default("medium"), // low | medium | high
+  assigneeId: integer("assignee_id").references(() => users.id, { onDelete: "set null" }),
+  createdById: integer("created_by_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type TeamTask = typeof teamTasks.$inferSelect;
+
+export const projects = pgTable("projects", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"), // planning | active | completed | archived
+  color: text("color").notNull().default("#6366f1"),
+  repoName: text("repo_name"),
+  repoUrl: text("repo_url"),
+  createdById: integer("created_by_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Project = typeof projects.$inferSelect;
+
+export const teamNotes = pgTable("team_notes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default("Untitled"),
+  content: text("content").default(""),
+  createdById: integer("created_by_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type TeamNote = typeof teamNotes.$inferSelect;
 
 export const aiSessions = pgTable("ai_sessions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

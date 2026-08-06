@@ -92,6 +92,34 @@
       "when": 1785941626372,
       "tag": "0012_regular_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786019926627,
+      "tag": "0013_sparkling_hannibal_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786025755758,
+      "tag": "0014_careful_diamondback",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1786029814594,
+      "tag": "0015_short_giant_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786030432908,
+      "tag": "0016_solid_giant_girl",
+      "breakpoints": true
     }
   ]
 }

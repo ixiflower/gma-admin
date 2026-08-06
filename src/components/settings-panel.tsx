@@ -240,16 +240,18 @@ function GithubTokenForm({ currentToken }: { currentToken: string | null }) {
   );
 }
 
-function AIConfigForm({
+export function AIConfigForm({
   user,
+  initialProvider,
 }: {
   user: {
     aiProvider: string | null;
     aiApiKey: string | null;
   } | null;
+  initialProvider?: string;
 }) {
   const [state, formAction, pending] = useActionState(saveAIConfig, {});
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(initialProvider ?? "");
   const [apiKey, setApiKey] = useState("");
   const [working, setWorking] = useState(
     user?.aiProvider && user?.aiApiKey ? user.aiProvider : "",

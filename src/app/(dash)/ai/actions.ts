@@ -20,6 +20,59 @@ export async function getUserAIProvider() {
   };
 }
 
+// Fetch ALL models the connected provider actually serves from its live API.
+// Falls back to null on failure so the client can keep the static list.
+export async function getProviderModelsLive() {
+  const user = await getSession();
+  if (!user?.aiProvider || !user?.aiApiKey) return null;
+  const provider = getProvider(user.aiProvider);
+  if (!provider) return null;
+
+  try {
+    if (provider.key === "google") {
+      const url = `${provider.url}/models?key=${user.aiApiKey}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      const data = await res.json();
+      const models = (data.models ?? [])
+        .map((m: { name: string }) => m.name.replace(/^models\//, ""))
+        .filter(Boolean)
+        .map((name: string) => ({ key: name, name }));
+      return { provider: provider.key, models };
+    }
+
+    if (provider.key === "anthropic") {
+      const res = await fetch("https://api.anthropic.com/v1/models", {
+        headers: {
+          "x-api-key": user.aiApiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await res.json();
+      const models = (data.data ?? []).map((m: { id: string }) => ({
+        key: m.id,
+        name: m.id,
+      }));
+      return { provider: provider.key, models };
+    }
+
+    // openai / groq — OpenAI-compatible /models endpoint
+    const baseUrl = provider.url.replace(/\/chat\/completions$/, "");
+    const res = await fetch(`${baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${user.aiApiKey}` },
+      signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json();
+    const models = (data.data ?? []).map((m: { id: string }) => ({
+      key: m.id,
+      name: m.id,
+    }));
+    return { provider: provider.key, models };
+  } catch {
+    return null;
+  }
+}
+
 export async function listSessions() {
   const user = await getSession();
   if (!user) return [];

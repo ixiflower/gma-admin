@@ -4,16 +4,16 @@ import { useState } from "react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   useDroppable,
-  type DragEndEvent, type DragOverEvent,
+  type DragEndEvent, type DragOverEvent, type DragStartEvent,
 } from "@dnd-kit/core";
 import {
-  SortableContext, verticalListSortingStrategy, useSortable,
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, Trash2, CheckCircle2, Circle, Clock, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { addTodo, moveTodo, toggleTodo, deleteTodo } from "@/app/(dash)/todos/actions";
+import { addTodo, moveTodo, reorderTodos, toggleTodo, deleteTodo } from "@/app/(dash)/todos/actions";
 import {
   Button, Checkbox, Input, Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
@@ -37,6 +37,7 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
 export function TodoClient({ todos }: { todos: Todo[] }) {
   const [items, setItems] = useState(todos);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dragStartCol, setDragStartCol] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -44,6 +45,12 @@ export function TodoClient({ todos }: { todos: Todo[] }) {
   const findColumn = (itemId: string): string | null => {
     const todo = items.find((t) => String(t.id) === itemId);
     return todo?.status ?? null;
+  };
+
+  // Remember which column the drag started from (onDragOver flips status in
+  // state, so we can't rely on current items in onDragEnd).
+  const handleDragStart = (event: DragStartEvent) => {
+    setDragStartCol(findColumn(String(event.active.id)));
   };
 
   // During drag: visual-only column switch (optimistic)
@@ -63,22 +70,55 @@ export function TodoClient({ todos }: { todos: Todo[] }) {
     );
   };
 
-  // On drop: persist
+  // On drop: persist (column change AND within-column order) + rebuild UI state
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    // Find which column the item is now in (could have been moved by dragOver)
     const currentItem = items.find((t) => String(t.id) === activeId);
     if (!currentItem) return;
 
-    // Determine target column
+    const oldCol = dragStartCol ?? currentItem.status;
+
+    // Is the drop target a column container or a sortable item?
     const targetCol = COLUMNS.some((c) => c.key === overId) ? overId : findColumn(overId);
     if (!targetCol) return;
 
-    moveTodo(Number(activeId), targetCol);
+    // Target column's current id order (active is already there if dragOver flipped its status).
+    const targetIds = items.filter((t) => t.status === targetCol).map((t) => String(t.id));
+    const activeIdx = targetIds.indexOf(activeId);
+    const overIdx = targetCol === overId
+      ? targetIds.length - 1 // dropped on the column container -> end of column
+      : targetIds.indexOf(overId);
+    const newOrder = arrayMove(targetIds, Math.max(activeIdx, 0), overIdx < 0 ? targetIds.length - 1 : overIdx);
+
+    // Rebuild the flat items array grouped by column so the UI order matches.
+    setItems((prev) => {
+      const activeTodo = prev.find((t) => String(t.id) === activeId)!;
+      const withoutActive = prev.filter((t) => String(t.id) !== activeId);
+      const byId = new Map(withoutActive.map((t) => [String(t.id), t]));
+      const rebuilt: Todo[] = [];
+      for (const col of STATUS_ORDER) {
+        if (col === targetCol) {
+          for (const id of newOrder) {
+            const t = byId.get(id) ?? (id === activeId ? activeTodo : undefined);
+            if (t) rebuilt.push({ ...t, status: targetCol });
+          }
+        } else {
+          rebuilt.push(...withoutActive.filter((t) => t.status === col));
+        }
+      }
+      return rebuilt;
+    });
+
+    // Persist: status first (if column changed), then the full column order.
+    if (oldCol !== targetCol) {
+      moveTodo(Number(activeId), targetCol);
+    }
+    reorderTodos(newOrder.map(Number));
+    setDragStartCol(null);
   };
 
   const getItems = (status: string) => items.filter((t) => t.status === status);
@@ -125,6 +165,7 @@ export function TodoClient({ todos }: { todos: Todo[] }) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
@@ -244,10 +285,12 @@ function SortableItem({
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      // NOTE: keep this node transform-free (no y/scale) — framer-motion would
+      // overwrite the element's `transform` and cancel dnd-kit's live reorder
+      // shifts of the sibling cards during a drag.
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       ref={setNodeRef}
       style={style}
       className={`group/item rounded-lg border bg-background shadow-sm transition-shadow ${
@@ -255,7 +298,14 @@ function SortableItem({
       } ${todo.completed ? "opacity-60" : ""}`}
     >
       <div className="flex items-start gap-2 p-2.5">
-        <div {...attributes} {...listeners} className="mt-0.5 shrink-0 cursor-grab text-muted-foreground/40 hover:text-muted-foreground touch-none">
+        <div
+          {...attributes}
+          {...listeners}
+          // dnd-kit's aria-describedby uses a module-level counter that differs
+          // between SSR (server process) and client hydration -> benign mismatch.
+          suppressHydrationWarning
+          className="mt-0.5 shrink-0 cursor-grab text-muted-foreground/40 hover:text-muted-foreground touch-none"
+        >
           <GripVertical className="size-3.5" />
         </div>
         <Checkbox checked={todo.completed === 1} onCheckedChange={onToggle} className="mt-0.5 shrink-0" />

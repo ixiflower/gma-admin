@@ -34,18 +34,27 @@ export function ChatRoom({
   currentUserId,
   lastMessages,
   chattedUserIds,
+  initialChatId,
 }: {
   messages: MessageWithAuthor[];
   users: User[];
   currentUserId: number;
   lastMessages: Record<number, { body: string; createdAt: Date }>;
   chattedUserIds: number[];
+  initialChatId?: number;
 }) {
   const [query, setQuery] = React.useState("");
   const [userQuery, setUserQuery] = React.useState("");
   const [rightPanel, setRightPanel] = React.useState<"users" | "search">("users");
   const [selectedChat, setSelectedChat] = React.useState<string | null>(null);
   const [showUsers, setShowUsers] = React.useState<boolean>(false);
+
+  // Deep-link: open the conversation with a specific user (e.g. from team page).
+  React.useEffect(() => {
+    if (!initialChatId) return;
+    const target = users.find((u) => u.id === initialChatId);
+    if (target) setSelectedChat(target.name);
+  }, [initialChatId, users]);
 
   React.useEffect(() => {
     const cookie = document.cookie.split("; ").find((r) => r.startsWith("chat_sidebar="));
@@ -207,7 +216,7 @@ export function ChatRoom({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2">
+        {selectedChat && <header className="flex shrink-0 items-center gap-2 border-b px-4 pt-2 pb-[12px]">
           <Avatar className="size-5">
             <AvatarFallback className="text-[0.55rem]">
               {selectedChat
@@ -218,10 +227,10 @@ export function ChatRoom({
             </AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium">{selectedChat}</span>
-              <div className="ml-auto flex items-center gap-1">
-                <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Audio call">
-                  <Phone className="size-4" />
-                </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Audio call">
+              <Phone className="size-4" />
+            </button>
             <button
               onClick={() => toggleUsersPanel()}
               className="hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:inline-flex"
@@ -260,7 +269,7 @@ export function ChatRoom({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </header>
+        </header>}
 
         <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
           {filtered.length === 0 ? (
@@ -307,11 +316,13 @@ export function ChatRoom({
           <div className="h-0" />
         </div>
 
-            <ChatInput
-              recipientId={selectedUser?.id ?? undefined}
-              currentUserId={currentUserId}
-              onSend={(msg) => setMessages((prev) => [...prev, msg])}
-            />
+            {selectedChat && (
+              <ChatInput
+                recipientId={selectedUser?.id ?? undefined}
+                currentUserId={currentUserId}
+                onSend={(msg) => setMessages((prev) => [...prev, msg])}
+              />
+            )}
       </div>
 
       {showUsers && (

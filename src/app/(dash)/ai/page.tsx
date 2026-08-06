@@ -10,7 +10,6 @@ import {
   Plus,
   Trash2,
   MessageSquare,
-  Settings,
   CheckCircle2,
   ChevronDown,
   Paperclip,
@@ -26,9 +25,10 @@ import {
   renameSession,
   askAI,
   getUserAIProvider,
+  getProviderModelsLive,
 } from "@/app/(dash)/ai/actions";
-import { saveAIConfig } from "@/lib/profile-actions";
 import { AI_PROVIDERS, getProvider } from "@/lib/ai-providers";
+import { AIConfigForm } from "@/components/settings-panel";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -40,13 +40,6 @@ import {
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Message, MessageAvatar, MessageContent, MessageGroup } from "@/components/ui/message";
 import { Marker, MarkerContent } from "@/components/ui/marker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,8 +84,6 @@ export default function AIPage() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [providerDialogOpen, setProviderDialogOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [savingKey, setSavingKey] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
@@ -100,6 +91,9 @@ export default function AIPage() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; session: SessionInfo } | null>(null);
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
+  const [providerSearch, setProviderSearch] = useState("");
+  const [providerMenuOpen, setProviderMenuOpen] = useState(false);
+  const providerSearchRef = useRef<HTMLInputElement>(null);
 
   const loadSessions = useCallback(async () => {
     const data = await listSessions();
@@ -114,6 +108,21 @@ export default function AIPage() {
         setModels(m);
         setModel(data.defaultModel);
         setProvider(data.provider);
+      }
+    } catch {
+      // ignore
+    }
+    // Sync ALL models the connected provider actually serves (file-tree
+    // dropdown). Falls back to the static list if the live fetch fails.
+    try {
+      const live = await getProviderModelsLive();
+      if (live && live.models.length > 0) {
+        setModels(live.models);
+        setModel((prev) =>
+          prev && live.models.some((m) => m.key === prev)
+            ? prev
+            : (live.models[0]?.key ?? prev),
+        );
       }
     } catch {
       // ignore
@@ -136,6 +145,13 @@ export default function AIPage() {
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
+
+  useEffect(() => {
+    if (providerMenuOpen) {
+      const t = setTimeout(() => providerSearchRef.current?.focus(), 10);
+      return () => clearTimeout(t);
+    }
+  }, [providerMenuOpen]);
 
   const openSession = async (id: number) => {
     setSessionId(id);
@@ -251,30 +267,18 @@ export default function AIPage() {
     setLoading(false);
   };
 
-  const handleSaveProvider = async () => {
-    if (!selectedProvider || !apiKey.trim()) return;
-    setSavingKey(true);
-    try {
-      const fd = new FormData();
-      fd.set("aiProvider", selectedProvider);
-      fd.set("aiApiKey", apiKey.trim());
-      const result = await saveAIConfig({}, fd);
-      if (result.success) {
-        setProviderDialogOpen(false);
-        setApiKey("");
-        setSelectedProvider("");
-        loadProvider();
-        toast.success("AI provider saved");
-      } else {
-        toast.error(result.errors?.form?.[0] || "Failed to save provider");
-      }
-    } catch {
-      toast.error("Failed to save provider");
-    }
-    setSavingKey(false);
+  const handleProviderChange = (key: string) => {
+    if (!key || key === provider) return;
+    // Switching provider requires that provider's API key — open the dialog
+    // preselected so the user can enter it.
+    setSelectedProvider(key);
+    setProviderDialogOpen(true);
   };
 
   const providerName = getProvider(provider)?.name ?? "No provider";
+  const filteredProviders = AI_PROVIDERS.filter((p) =>
+    p.name.toLowerCase().includes(providerSearch.trim().toLowerCase()),
+  );
   const modelName = models.find((m) => m.key === model)?.name ?? "Model";
   const showModelSelect = models.length > 0;
 
@@ -362,22 +366,17 @@ export default function AIPage() {
               {sessionId ? sessions.find((s) => s.id === sessionId)?.title ?? "Chat" : "Chat with AI models"}
             </p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-1 hover:bg-accent">
-              <Ellipsis className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={6} className="w-48">
-              <DropdownMenuItem onClick={() => setProviderDialogOpen(true)}>
-                <Sparkles className="size-3.5" />
-                Change Provider
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = "/settings"}>
-                <Settings className="size-3.5" />
-                Settings
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => {
+              setSelectedProvider("");
+              setProviderDialogOpen(true);
+            }}
+            title="AI provider settings"
+          >
+            <Ellipsis className="size-4" />
+          </Button>
         </div>
         <Separator />
         <div ref={promptRef} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
@@ -465,21 +464,93 @@ export default function AIPage() {
               />
               {showModelSelect && (
                 <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                  <Select value={model} onValueChange={(v) => setModel(v ?? "")} disabled={loading}>
-                    <SelectTrigger size="sm" className="h-6 gap-1 border-border bg-muted/50 px-1.5 text-xs shadow-none hover:bg-muted">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="end" sideOffset={6}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      disabled={loading}
+                      className="inline-flex h-6 max-w-24 items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 text-xs shadow-none hover:bg-muted disabled:opacity-50"
+                      title="Select model"
+                    >
+                      <span className="truncate">{modelName}</span>
+                      <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      sideOffset={6}
+                      className="max-h-72 w-64 overflow-y-auto"
+                    >
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        <span className="text-sm leading-none">{getProvider(provider)?.icon}</span>
+                        <span className="flex-1 truncate">{providerName}</span>
+                        <span className="text-[10px] font-normal">{models.length}</span>
+                      </div>
+                      <DropdownMenuSeparator />
                       {models.map((m) => (
-                        <SelectItem key={m.key} value={m.key}>
-                          {m.name}
-                        </SelectItem>
+                        <DropdownMenuItem
+                          key={m.key}
+                          onClick={() => setModel(m.key)}
+                          className="cursor-pointer pl-6"
+                        >
+                          <span className="mr-1.5 text-muted-foreground/60">└</span>
+                          <span className="flex-1 truncate">{m.name}</span>
+                          {model === m.key && (
+                            <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" />
+                          )}
+                        </DropdownMenuItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               )}
             </div>
+            <DropdownMenu
+              open={providerMenuOpen}
+              onOpenChange={(o) => {
+                setProviderMenuOpen(o);
+                if (!o) setProviderSearch("");
+              }}
+            >
+              <DropdownMenuTrigger
+                disabled={loading}
+                className="inline-flex h-8 w-auto min-w-[7.5rem] items-center justify-between gap-1.5 rounded-md border bg-muted/50 px-2.5 text-xs shadow-none transition-colors hover:bg-muted disabled:opacity-50"
+                title="Change AI provider"
+              >
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="shrink-0 text-sm leading-none">
+                    {getProvider(provider)?.icon ?? "⚙️"}
+                  </span>
+                  <span className="truncate">{getProvider(provider)?.name ?? "Provider"}</span>
+                </span>
+                <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={6} className="w-56">
+                <div className="p-1.5">
+                  <Input
+                    ref={providerSearchRef}
+                    value={providerSearch}
+                    onChange={(e) => setProviderSearch(e.target.value)}
+                    placeholder="Search providers..."
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <DropdownMenuSeparator />
+                {filteredProviders.map((p) => (
+                  <DropdownMenuItem
+                    key={p.key}
+                    onClick={() => handleProviderChange(p.key)}
+                    className="cursor-pointer"
+                  >
+                    <span className="text-sm leading-none">{p.icon}</span>
+                    <span className="flex-1">{p.name}</span>
+                    {provider === p.key && (
+                      <CheckCircle2 className="size-3.5 text-emerald-500" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                {filteredProviders.length === 0 && (
+                  <p className="px-2 py-2 text-xs text-muted-foreground">No providers found</p>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button type="submit" disabled={loading || (!input.trim() && !attachedFile)} size="icon-sm">
               <SendHorizonal className="size-4" />
             </Button>
@@ -487,65 +558,27 @@ export default function AIPage() {
         </form>
       </div>
 
-      <Dialog open={providerDialogOpen} onOpenChange={setProviderDialogOpen}>
+      <Dialog
+        open={providerDialogOpen}
+        onOpenChange={(o) => {
+          setProviderDialogOpen(o);
+          if (!o) {
+            setSelectedProvider("");
+            loadProvider();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Select AI Provider</DialogTitle>
+            <DialogTitle>AI Provider</DialogTitle>
             <DialogDescription>
-              Choose a provider and enter your API key to get started.
+              Configure the AI provider used by this chat.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            {AI_PROVIDERS.map(({ key, name, icon }) => {
-              const isActive = provider === key;
-              const isSelected = selectedProvider === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => { setSelectedProvider(key); setApiKey(""); }}
-                  className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                    isActive || isSelected
-                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20"
-                      : "border-border hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <span className="text-2xl">{icon}</span>
-                  <span className="text-xs font-medium">{name}</span>
-                  {isActive ? (
-                    <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="size-3.5" /> Active
-                    </span>
-                  ) : isSelected ? (
-                    <CheckCircle2 className="size-3.5 text-emerald-500" />
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-          {selectedProvider && (
-            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="popup-api-key" className="text-xs font-medium">
-                  {AI_PROVIDERS.find((p) => p.key === selectedProvider)?.name} API Key
-                </label>
-                <Input
-                  id="popup-api-key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
-                />
-              </div>
-              <Button
-                size="sm"
-                onClick={handleSaveProvider}
-                disabled={savingKey || !apiKey.trim()}
-              >
-                {savingKey ? "Saving..." : "Save & switch"}
-              </Button>
-            </div>
-          )}
+          <AIConfigForm
+            user={{ aiProvider: provider || null, aiApiKey: provider ? "configured" : null }}
+            initialProvider={selectedProvider || undefined}
+          />
         </DialogContent>
       </Dialog>
     </div>
